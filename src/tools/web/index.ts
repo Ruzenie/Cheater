@@ -78,7 +78,9 @@ async function safeFetch(
     const message =
       error instanceof Error && error.name === 'AbortError'
         ? `请求超时 (${timeout}ms)`
-        : (error instanceof Error ? error.message : String(error));
+        : error instanceof Error
+          ? error.message
+          : String(error);
 
     return {
       ok: false,

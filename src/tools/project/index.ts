@@ -274,8 +274,32 @@ function generatePackageJson(opts: {
   return JSON.stringify(pkg, null, 2);
 }
 
+interface TsconfigCompilerOptions {
+  target: string;
+  useDefineForClassFields: boolean;
+  module: string;
+  lib: string[];
+  skipLibCheck: boolean;
+  moduleResolution: string;
+  allowImportingTsExtensions: boolean;
+  isolatedModules: boolean;
+  moduleDetection: string;
+  noEmit: boolean;
+  strict: boolean;
+  noUnusedLocals: boolean;
+  noUnusedParameters: boolean;
+  noFallthroughCasesInSwitch: boolean;
+  noUncheckedSideEffectImports: boolean;
+  jsx?: string;
+}
+
+interface TsconfigJson {
+  compilerOptions: TsconfigCompilerOptions;
+  include: string[];
+}
+
 function generateTsconfigJson(framework: string): string {
-  const base: Record<string, any> = {
+  const base: TsconfigJson = {
     compilerOptions: {
       target: 'ES2020',
       useDefineForClassFields: true,
