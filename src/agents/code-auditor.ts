@@ -19,9 +19,9 @@ import { getWrappedModel, type AllProviders } from '../config/index.js';
 import { frontendAgentTelemetry } from '../middleware/telemetry.js';
 import { consumeTextStream } from '../utils/streaming.js';
 import { safeParseJson } from '../utils/json.js';
-import { scanSecurity, hasBlockingIssues } from '../rules/security-rules.js';
-import { scanA11y } from '../rules/a11y-rules.js';
-import { scanPerformance } from '../rules/performance-rules.js';
+import { scanSecurity, hasBlockingIssues, type SecurityIssue } from '../rules/security-rules.js';
+import { scanA11y, type A11yIssue } from '../rules/a11y-rules.js';
+import { scanPerformance, type PerformanceIssue } from '../rules/performance-rules.js';
 
 // ── 输出类型 ──────────────────────────────────────────
 
@@ -29,9 +29,9 @@ export interface AuditOutput {
   overallScore: number;
   passed: boolean;
   staticScan: {
-    security: { passed: boolean; issues: any[] };
-    a11y: { passed: boolean; issues: any[] };
-    performance: { passed: boolean; issues: any[] };
+    security: { passed: boolean; issues: SecurityIssue[] };
+    a11y: { passed: boolean; issues: A11yIssue[] };
+    performance: { passed: boolean; issues: PerformanceIssue[] };
   };
   deepAnalysis: {
     architectureNotes: string[];
@@ -198,14 +198,17 @@ ${JSON.stringify(staticResult.summary)}
 
     // 宽松解析深度分析
     try {
-      const rawAnalysis = safeParseJson(analysisText);
+      const rawAnalysis = safeParseJson(analysisText) as Record<string, unknown>;
       const parsed = DeepAnalysisSchema.safeParse(rawAnalysis);
       deepAnalysis = parsed.success
         ? parsed.data
         : {
-            architectureNotes: rawAnalysis.architectureNotes ?? [],
-            improvementSuggestions: rawAnalysis.improvementSuggestions ?? [],
-            riskAssessment: rawAnalysis.riskAssessment ?? analysisText.slice(0, 300),
+            architectureNotes: (rawAnalysis.architectureNotes as string[]) ?? [],
+            improvementSuggestions: (rawAnalysis.improvementSuggestions as string[]) ?? [],
+            riskAssessment:
+              (typeof rawAnalysis.riskAssessment === 'string'
+                ? rawAnalysis.riskAssessment
+                : undefined) ?? analysisText.slice(0, 300),
           };
     } catch {
       deepAnalysis = {
@@ -217,11 +220,12 @@ ${JSON.stringify(staticResult.summary)}
 
     // 宽松解析报告
     try {
-      const rawSummary = safeParseJson(summaryText);
+      const rawSummary = safeParseJson(summaryText) as Record<string, unknown>;
       const parsed = AuditSummarySchema.safeParse(rawSummary);
       summary = parsed.success
         ? parsed.data.summary
-        : (rawSummary.summary ?? summaryText.slice(0, 200));
+        : ((typeof rawSummary.summary === 'string' ? rawSummary.summary : undefined) ??
+            summaryText.slice(0, 200));
     } catch {
       summary = summaryText.slice(0, 200);
     }
@@ -255,11 +259,12 @@ ${JSON.stringify(staticResult.summary)}
       echo: false,
     });
     try {
-      const rawSummary = safeParseJson(summaryText);
+      const rawSummary = safeParseJson(summaryText) as Record<string, unknown>;
       const parsed = AuditSummarySchema.safeParse(rawSummary);
       summary = parsed.success
         ? parsed.data.summary
-        : (rawSummary.summary ?? summaryText.slice(0, 200));
+        : ((typeof rawSummary.summary === 'string' ? rawSummary.summary : undefined) ??
+            summaryText.slice(0, 200));
     } catch {
       summary = summaryText.slice(0, 200);
     }

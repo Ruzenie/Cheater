@@ -101,7 +101,7 @@ export async function runPromptRefiner(
   // 宽松解析
   let parsed: RefinedRequirement;
   try {
-    const rawJson = safeParseJson(resultText);
+    const rawJson = safeParseJson(resultText) as Record<string, unknown>;
     const validated = RefinedRequirementSchema.safeParse(rawJson);
 
     if (validated.success) {
@@ -109,10 +109,12 @@ export async function runPromptRefiner(
     } else {
       // 部分字段可用就用
       parsed = {
-        refined: rawJson.refined ?? requirement,
-        entities: Array.isArray(rawJson.entities) ? rawJson.entities : [],
-        constraints: Array.isArray(rawJson.constraints) ? rawJson.constraints : [],
-        suggestedStack: rawJson.suggestedStack,
+        refined: (typeof rawJson.refined === 'string' ? rawJson.refined : undefined) ?? requirement,
+        entities: Array.isArray(rawJson.entities)
+          ? (rawJson.entities as Array<{ type: string; value: string }>)
+          : [],
+        constraints: Array.isArray(rawJson.constraints) ? (rawJson.constraints as string[]) : [],
+        suggestedStack: rawJson.suggestedStack as Record<string, string> | undefined,
         original: requirement,
       };
     }

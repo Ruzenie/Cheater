@@ -331,7 +331,7 @@ function buildConfigFiles(
 
   // tsconfig.json (非原生项目)
   if (fwKey !== 'html+css+js') {
-    const tsconfig: Record<string, any> = {
+    const tsconfig: Record<string, unknown> = {
       compilerOptions: {
         target: 'ES2020',
         useDefineForClassFields: true,
@@ -351,7 +351,7 @@ function buildConfigFiles(
       include: ['src'],
     };
     if (fwKey === 'react') {
-      tsconfig.compilerOptions.jsx = 'react-jsx';
+      (tsconfig.compilerOptions as Record<string, unknown>).jsx = 'react-jsx';
     }
     files.push({
       filePath: 'tsconfig.json',

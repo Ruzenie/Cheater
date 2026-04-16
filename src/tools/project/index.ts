@@ -13,6 +13,11 @@ import { z } from 'zod';
 
 // ── 框架标准目录模板 ──────────────────────────────
 
+/**
+ * 预定义的框架目录结构模板，包含常见的前端框架和原生方案。每个框架定义了推荐的目录和入口文件路径，供 Project Planner 参考生成项目结构。
+ * 设计时参考了社区最佳实践和官方模板，确保生成的结构合理且易于维护。
+ * 未来可根据需求增加更多框架或自定义选项。
+ */
 const FRAMEWORK_STRUCTURES: Record<
   string,
   {
@@ -90,6 +95,9 @@ const FRAMEWORK_STRUCTURES: Record<
 
 // ── 依赖映射表 ──────────────────────────────────
 
+/**
+ * 预定义的框架和功能依赖映射表，根据不同的框架、样式方案和功能特性，列出了推荐的 npm 依赖和开发依赖。Project Planner 可以根据用户需求自动推断需要安装哪些包，生成 package.json 的依赖列表，以及提供安装指令。
+ */
 const FRAMEWORK_DEPENDENCIES: Record<
   string,
   {
@@ -137,6 +145,9 @@ const FRAMEWORK_DEPENDENCIES: Record<
   },
 };
 
+/**
+ * 预定义的样式方案依赖映射表，根据不同的样式方案（如 Tailwind、CSS Modules、Sass、Styled Components 等），列出了推荐的 npm 依赖和开发依赖。Project Planner 可以根据用户选择的样式方案自动推断需要安装哪些包，生成 package.json 的依赖列表，以及提供安装指令。
+ */
 const STYLE_DEPENDENCIES: Record<
   string,
   {
@@ -175,6 +186,9 @@ const STYLE_DEPENDENCIES: Record<
   },
 };
 
+/**
+ * 预定义的功能特性依赖映射表，根据不同的功能需求（如路由、状态管理、动画、表单验证、图标库、HTTP 客户端、测试框架等），列出了推荐的 npm 依赖和开发依赖。Project Planner 可以根据用户选择的功能特性自动推断需要安装哪些包，生成 package.json 的依赖列表，以及提供安装指令。
+ */
 const FEATURE_DEPENDENCIES: Record<
   string,
   {

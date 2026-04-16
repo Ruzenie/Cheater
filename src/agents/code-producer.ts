@@ -61,20 +61,25 @@ ${fileLines}
 - 不要输出 JSON 以外的任何内容`;
 }
 
-function normalizeArtifacts(raw: any, fallbackArtifacts: GeneratedArtifact[]): GeneratedArtifact[] {
+function normalizeArtifacts(
+  raw: Record<string, unknown>,
+  fallbackArtifacts: GeneratedArtifact[],
+): GeneratedArtifact[] {
   const fallbackMap = new Map(fallbackArtifacts.map((artifact) => [artifact.fileName, artifact]));
 
-  const fileList = Array.isArray(raw?.files)
-    ? raw.files
+  const rawFiles = raw?.files;
+  const fileList: unknown[] = Array.isArray(rawFiles)
+    ? rawFiles
     : raw && typeof raw === 'object'
       ? Object.entries(raw).map(([fileName, content]) => ({ fileName, content }))
       : [];
 
   const normalized = fileList
-    .map((file: any) => {
-      const fileName = typeof file?.fileName === 'string' ? file.fileName : '';
+    .map((file: unknown) => {
+      const f = file as Record<string, unknown> | undefined;
+      const fileName = typeof f?.fileName === 'string' ? f.fileName : '';
       const content =
-        typeof file?.content === 'string' ? file.content : typeof file === 'string' ? file : '';
+        typeof f?.content === 'string' ? f.content : typeof file === 'string' ? file : '';
       const fallback = fallbackMap.get(fileName);
 
       if (!fileName || !content || !fallback) {
@@ -96,7 +101,7 @@ function normalizeArtifacts(raw: any, fallbackArtifacts: GeneratedArtifact[]): G
 
 function parseArtifacts(text: string, fallbackArtifacts: GeneratedArtifact[]): GeneratedArtifact[] {
   try {
-    const raw = safeParseJson(text);
+    const raw = safeParseJson(text) as Record<string, unknown>;
     const result = normalizeArtifacts(raw, fallbackArtifacts);
     // 如果 normalizeArtifacts 返回了 fallback（即解析出的内容为空），发出警告
     if (result === fallbackArtifacts) {

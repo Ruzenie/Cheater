@@ -53,13 +53,14 @@ ${assetNames.map((name) => `    {"fileName": "${name}", "content": "完整文件
 
 function parseAssets(text: string, fallbackAssets: AssembledAsset[]): AssembledAsset[] {
   try {
-    const raw = safeParseJson(text);
+    const raw = safeParseJson(text) as Record<string, unknown>;
     const fallbackMap = new Map(fallbackAssets.map((asset) => [asset.fileName, asset.content]));
-    const parsed = Array.isArray(raw?.assets) ? raw.assets : [];
+    const parsed = Array.isArray(raw?.assets) ? (raw.assets as unknown[]) : [];
     const normalized = parsed
-      .map((asset: any) => {
-        const fileName = typeof asset?.fileName === 'string' ? asset.fileName : '';
-        const content = typeof asset?.content === 'string' ? asset.content : '';
+      .map((asset: unknown) => {
+        const a = asset as Record<string, unknown> | undefined;
+        const fileName = typeof a?.fileName === 'string' ? a.fileName : '';
+        const content = typeof a?.content === 'string' ? a.content : '';
         if (!fileName || !content || !fallbackMap.has(fileName)) {
           return null;
         }

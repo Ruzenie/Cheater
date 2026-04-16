@@ -62,13 +62,15 @@ function telemetryConfig(functionId: string) {
  * 将嵌套对象格式的组件树转为数组格式
  * 模型可能返回 { root: {...}, NavbarHeader: {...} } 而不是 [{...}, {...}]
  */
-function normalizeComponentTree(raw: any): any[] {
+function normalizeComponentTree(raw: unknown): Record<string, unknown>[] {
   // 如果已经是数组，直接返回
-  if (Array.isArray(raw)) return raw;
+  if (Array.isArray(raw)) return raw as Record<string, unknown>[];
 
   // 如果是对象（key = 组件名），转为数组
   if (typeof raw === 'object' && raw !== null) {
-    return Object.values(raw).filter((v: any) => typeof v === 'object' && v !== null && v.name);
+    return (Object.values(raw) as Record<string, unknown>[]).filter(
+      (v) => typeof v === 'object' && v !== null && 'name' in v,
+    );
   }
 
   return [];
@@ -133,16 +135,16 @@ export async function runDesignAnalyzer(
   // 宽松解析：兼容模型返回的各种格式偏差
   let parsedComponents: z.infer<typeof ComponentSpecSchema>[];
   try {
-    const rawJson = safeParseJson(decomposeText);
+    const rawJson = safeParseJson(decomposeText) as Record<string, unknown>;
     // 提取组件列表：支持 { components: [...] } 或 { componentTree: {...} } 等
     const rawList = rawJson.components ?? rawJson.componentTree ?? rawJson;
     const normalized = normalizeComponentTree(rawList);
 
     // 用 safeParse 做宽松验证，跳过不合格的组件
     parsedComponents = normalized
-      .map((c: any) => ComponentSpecSchema.safeParse(c))
-      .filter((r: any) => r.success)
-      .map((r: any) => r.data);
+      .map((c) => ComponentSpecSchema.safeParse(c))
+      .filter((r) => r.success)
+      .map((r) => r.data);
 
     if (parsedComponents.length === 0) {
       throw new Error('没有解析到有效组件');
@@ -154,8 +156,9 @@ export async function runDesignAnalyzer(
       console.warn(`   ⚠️  组件数过多 (${parsedComponents.length})，截断到 ${MAX_COMPONENTS} 个`);
       parsedComponents = parsedComponents.slice(0, MAX_COMPONENTS);
     }
-  } catch (e: any) {
-    console.warn(`   ⚠️  组件树解析失败 (${e.message})，使用 fallback`);
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : String(e);
+    console.warn(`   ⚠️  组件树解析失败 (${message})，使用 fallback`);
     parsedComponents = [
       {
         name: 'MainComponent',
@@ -244,14 +247,17 @@ export async function runDesignAnalyzer(
   // 宽松解析状态设计
   let stateDesign: z.infer<typeof StateDesignSchema>;
   try {
-    const rawState = safeParseJson(stateText);
+    const rawState = safeParseJson(stateText) as Record<string, unknown>;
     const parsed = StateDesignSchema.safeParse(rawState);
     stateDesign = parsed.success
       ? parsed.data
       : {
           localStates: [],
           sharedStates: [],
-          recommendation: rawState.recommendation ?? stateText.slice(0, 200),
+          recommendation:
+            (typeof rawState.recommendation === 'string'
+              ? rawState.recommendation
+              : undefined) ?? stateText.slice(0, 200),
         };
   } catch {
     stateDesign = {

@@ -376,8 +376,10 @@ ${componentInfoForEntry.map((c) => `- ${c.name} (${c.isLayout ? '布局' : '内�
     });
 
     try {
-      const raw = safeParseJson(entryText);
-      const entryFiles = Array.isArray(raw?.files) ? raw.files : [];
+      const raw = safeParseJson(entryText) as Record<string, unknown>;
+      const entryFiles = Array.isArray(raw?.files)
+        ? (raw.files as Array<Record<string, unknown>>)
+        : [];
 
       for (const file of entryFiles) {
         if (typeof file?.filePath === 'string' && typeof file?.content === 'string') {

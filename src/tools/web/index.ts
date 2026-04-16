@@ -15,10 +15,12 @@ import { tool } from 'ai';
 import { z } from 'zod';
 
 // ── 内部辅助 ──────────────────────────────────────
-
+/** 默认请求超时时间（毫秒） */
 const DEFAULT_TIMEOUT = 10_000;
+/** 抓取内容的最大长度（字符数），超过则截断并提示 */
 const MAX_CONTENT_LENGTH = 15_000;
 
+/** 默认请求头，模拟常见浏览器以提高兼容性 */
 const DEFAULT_HEADERS = {
   'User-Agent': 'FrontendAgent/1.0 (Node.js)',
   Accept: 'text/html,application/json,text/plain;q=0.9',
@@ -35,8 +37,14 @@ async function safeFetch(
   } = {},
 ): Promise<{ ok: boolean; status: number; text: string; contentType: string }> {
   const { timeout = DEFAULT_TIMEOUT, headers = {} } = options;
-
   try {
+    // 使用 AbortController 实现请求超时
+    /**
+     * controller = {
+     *    signal: AbortSignal { aborted: false, onabort: null, reason: undefined, throwIfAborted: [Function] },
+     *    abort: [Function]
+     * }
+     */
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeout);
 
@@ -64,11 +72,13 @@ async function safeFetch(
       };
     } catch (fetchError) {
       clearTimeout(timer); // 确保异常路径也清理定时器
-      throw fetchError;    // 重新抛出，由外层 catch 处理
+      throw fetchError; // 重新抛出，由外层 catch 处理
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     const message =
-      error.name === 'AbortError' ? `请求超时 (${timeout}ms)` : (error.message ?? String(error));
+      error instanceof Error && error.name === 'AbortError'
+        ? `请求超时 (${timeout}ms)`
+        : (error instanceof Error ? error.message : String(error));
 
     return {
       ok: false,
@@ -274,15 +284,18 @@ export const npmPackageInfo = tool({
         keywords: (data.keywords ?? []).slice(0, 15),
         dependencies: Object.keys(latestInfo.dependencies ?? {}),
         peerDependencies: Object.keys(latestInfo.peerDependencies ?? {}),
-        maintainers: (data.maintainers ?? []).slice(0, 5).map((m: any) => m.name ?? m.email ?? ''),
+        maintainers: (data.maintainers ?? [])
+          .slice(0, 5)
+          .map((m: Record<string, string>) => m.name ?? m.email ?? ''),
         lastModified: data.time?.[latestVersion] ?? '',
         weeklyDownloads: '使用 https://api.npmjs.org/downloads/point/last-week/ 查询',
       };
-    } catch (e: any) {
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : String(e);
       return {
         success: false,
         packageName,
-        error: `JSON 解析失败: ${e.message}`,
+        error: `JSON 解析失败: ${message}`,
       };
     }
   },

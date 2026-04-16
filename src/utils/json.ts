@@ -67,7 +67,7 @@ function findJsonBoundary(text: string, startIndex: number): number {
  *
  * @throws {SyntaxError} 当清洗后仍无法解析为合法 JSON 时抛出
  */
-export function safeParseJson(text: string): any {
+export function safeParseJson(text: string): unknown {
   // 1. 去掉 markdown code fence
   let cleaned = text
     .replace(/^```(?:json|typescript|tsx|javascript|jsx|html|css)?\s*\n?/gm, '')

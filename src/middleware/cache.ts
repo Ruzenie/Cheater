@@ -16,15 +16,15 @@ import type { LanguageModelMiddleware } from 'ai';
 // ── 缓存接口（可扩展为 Redis/文件/IndexedDB）──
 
 export interface CacheStore {
-  get(key: string): Promise<any | null>;
-  set(key: string, value: any, ttlMs?: number): Promise<void>;
+  get(key: string): Promise<unknown | null>;
+  set(key: string, value: unknown, ttlMs?: number): Promise<void>;
 }
 
 /** 内存缓存（默认） */
 class MemoryCache implements CacheStore {
-  private store = new Map<string, { value: any; expiresAt: number; lastAccessed: number }>();
+  private store = new Map<string, { value: unknown; expiresAt: number; lastAccessed: number }>();
 
-  async get(key: string): Promise<any | null> {
+  async get(key: string): Promise<unknown | null> {
     const entry = this.store.get(key);
     if (!entry) return null;
     if (Date.now() > entry.expiresAt) {
@@ -36,7 +36,7 @@ class MemoryCache implements CacheStore {
     return entry.value;
   }
 
-  async set(key: string, value: any, ttlMs = 30 * 60 * 1000): Promise<void> {
+  async set(key: string, value: unknown, ttlMs = 30 * 60 * 1000): Promise<void> {
     // 定期清理过期条目（每 100 次写入触发一次）
     if (this.store.size > 0 && this.store.size % 100 === 0) {
       const now = Date.now();
@@ -76,7 +76,7 @@ export function getDefaultCache(): MemoryCache {
 
 // ── 缓存 key 生成 ──
 
-function createCacheKey(params: any): string {
+function createCacheKey(params: Record<string, unknown>): string {
   // 序列化参数生成稳定的 key
   try {
     return JSON.stringify(params);
@@ -88,11 +88,13 @@ function createCacheKey(params: any): string {
 
 // ── 时间戳修复（JSON 序列化后 Date 变成 string）──
 
-function fixTimestamps(obj: any): any {
-  if (!obj) return obj;
+function fixTimestamps<T>(obj: T): T {
+  if (!obj || typeof obj !== 'object') return obj;
 
-  if (obj.response?.timestamp && typeof obj.response.timestamp === 'string') {
-    obj.response.timestamp = new Date(obj.response.timestamp);
+  const record = obj as Record<string, unknown>;
+  const response = record.response as Record<string, unknown> | undefined;
+  if (response?.timestamp && typeof response.timestamp === 'string') {
+    response.timestamp = new Date(response.timestamp);
   }
 
   return obj;
@@ -138,14 +140,14 @@ export function createCacheMiddleware(
     specificationVersion: 'v3' as const,
 
     wrapGenerate: async ({ doGenerate, params }) => {
-      const cacheKey = createCacheKey(params);
+      const cacheKey = createCacheKey(params as unknown as Record<string, unknown>);
       const cached = await store.get(cacheKey);
 
       if (cached !== null) {
         if (process.env.DEBUG_CACHE === 'true') {
           console.log('[cache] HIT (generate)');
         }
-        return fixTimestamps(cached);
+        return fixTimestamps(cached) as Awaited<ReturnType<typeof doGenerate>>;
       }
 
       const result = await doGenerate();

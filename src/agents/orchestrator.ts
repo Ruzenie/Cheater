@@ -68,8 +68,9 @@ export interface OrchestratorResult {
 }
 
 // ── 配置 ──────────────────────────────────────────────
-
+/** 代码审计循环的最大轮次*/
 const MAX_ITERATIONS = 3;
+/** 质量评分阈值，达到或超过即视为通过（满分 10） */
 const QUALITY_THRESHOLD = 7;
 /** 默认预算上限（美元） */
 const DEFAULT_BUDGET_LIMIT = 5.0;

@@ -53,11 +53,11 @@ export const costTrackerMiddleware: LanguageModelMiddleware = {
     const inputTokens =
       typeof result.usage?.inputTokens === 'number'
         ? result.usage.inputTokens
-        : ((result.usage?.inputTokens as any)?.total ?? 0);
+        : ((result.usage?.inputTokens as { total?: number } | undefined)?.total ?? 0);
     const outputTokens =
       typeof result.usage?.outputTokens === 'number'
         ? result.usage.outputTokens
-        : ((result.usage?.outputTokens as any)?.total ?? 0);
+        : ((result.usage?.outputTokens as { total?: number } | undefined)?.total ?? 0);
     const modelId = model.modelId ?? 'unknown';
 
     const record: CostRecord = {
@@ -93,30 +93,48 @@ export const costTrackerMiddleware: LanguageModelMiddleware = {
     let totalInputTokens = 0;
     let totalOutputTokens = 0;
 
+    /** Shape of a stream chunk that may carry usage or finish info */
+    interface StreamChunkLike {
+      type?: string;
+      inputTokens?: number | { total?: number };
+      outputTokens?: number | { total?: number };
+      usage?: {
+        inputTokens?: number | { total?: number };
+        outputTokens?: number | { total?: number };
+      };
+      experimental_providerMetadata?: {
+        usage?: {
+          inputTokens?: number | { total?: number };
+          outputTokens?: number | { total?: number };
+        };
+      };
+    }
+
     const trackingStream = new TransformStream({
-      transform(chunk: any, controller: any) {
+      transform(chunk: unknown, controller: TransformStreamDefaultController) {
+        const c = chunk as StreamChunkLike;
         // 捕获各种可能包含 usage 信息的 chunk 格式
-        if (chunk.type === 'usage') {
+        if (c.type === 'usage') {
           totalInputTokens =
-            typeof chunk.inputTokens === 'number'
-              ? chunk.inputTokens
-              : (chunk.inputTokens?.total ?? totalInputTokens);
+            typeof c.inputTokens === 'number'
+              ? c.inputTokens
+              : ((c.inputTokens as { total?: number } | undefined)?.total ?? totalInputTokens);
           totalOutputTokens =
-            typeof chunk.outputTokens === 'number'
-              ? chunk.outputTokens
-              : (chunk.outputTokens?.total ?? totalOutputTokens);
+            typeof c.outputTokens === 'number'
+              ? c.outputTokens
+              : ((c.outputTokens as { total?: number } | undefined)?.total ?? totalOutputTokens);
         }
-        if (chunk.type === 'finish' || chunk.type === 'step-finish') {
-          const usage = chunk.usage ?? chunk.experimental_providerMetadata?.usage;
+        if (c.type === 'finish' || c.type === 'step-finish') {
+          const usage = c.usage ?? c.experimental_providerMetadata?.usage;
           if (usage) {
             totalInputTokens =
               typeof usage.inputTokens === 'number'
                 ? usage.inputTokens
-                : (usage.inputTokens?.total ?? totalInputTokens);
+                : ((usage.inputTokens as { total?: number } | undefined)?.total ?? totalInputTokens);
             totalOutputTokens =
               typeof usage.outputTokens === 'number'
                 ? usage.outputTokens
-                : (usage.outputTokens?.total ?? totalOutputTokens);
+                : ((usage.outputTokens as { total?: number } | undefined)?.total ?? totalOutputTokens);
           }
         }
         controller.enqueue(chunk);

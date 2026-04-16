@@ -75,6 +75,47 @@ function emit(event: TelemetryEvent): void {
 
 // ── TelemetryIntegration 实现 ──
 
+/** Shape of events received from AI SDK telemetry hooks */
+interface TelemetryStartEvent {
+  functionId?: string;
+  model?: { modelId?: string };
+}
+
+interface TelemetryStepStartEvent {
+  stepNumber?: number;
+  model?: { modelId?: string };
+}
+
+interface TelemetryStepFinishEvent {
+  stepNumber?: number;
+  usage?: {
+    inputTokens?: number;
+    outputTokens?: number;
+    totalTokens?: number;
+  };
+}
+
+interface TelemetryToolCallStartEvent {
+  toolCall?: { toolName?: string };
+  toolName?: string;
+}
+
+interface TelemetryToolCallFinishEvent {
+  toolCall?: { toolName?: string };
+  toolName?: string;
+  durationMs?: number;
+  success?: boolean;
+  error?: unknown;
+}
+
+interface TelemetryFinishEvent {
+  totalUsage?: {
+    inputTokens?: number;
+    outputTokens?: number;
+    totalTokens?: number;
+  };
+}
+
 class FrontendAgentTelemetry implements TelemetryIntegration {
   private verbose: boolean;
 
@@ -82,7 +123,7 @@ class FrontendAgentTelemetry implements TelemetryIntegration {
     this.verbose = options.verbose ?? process.env.DEBUG_TELEMETRY === 'true';
   }
 
-  async onStart(event: any): Promise<void> {
+  async onStart(event: TelemetryStartEvent): Promise<void> {
     const telemetryEvent: TelemetryEvent = {
       type: 'start',
       timestamp: Date.now(),
@@ -98,7 +139,7 @@ class FrontendAgentTelemetry implements TelemetryIntegration {
     }
   }
 
-  async onStepStart(event: any): Promise<void> {
+  async onStepStart(event: TelemetryStepStartEvent): Promise<void> {
     const telemetryEvent: TelemetryEvent = {
       type: 'step-start',
       timestamp: Date.now(),
@@ -114,7 +155,7 @@ class FrontendAgentTelemetry implements TelemetryIntegration {
     }
   }
 
-  async onStepFinish(event: any): Promise<void> {
+  async onStepFinish(event: TelemetryStepFinishEvent): Promise<void> {
     const usage = event.usage;
     const telemetryEvent: TelemetryEvent = {
       type: 'step-finish',
@@ -138,7 +179,7 @@ class FrontendAgentTelemetry implements TelemetryIntegration {
     }
   }
 
-  async onToolCallStart(event: any): Promise<void> {
+  async onToolCallStart(event: TelemetryToolCallStartEvent): Promise<void> {
     const telemetryEvent: TelemetryEvent = {
       type: 'tool-start',
       timestamp: Date.now(),
@@ -151,7 +192,7 @@ class FrontendAgentTelemetry implements TelemetryIntegration {
     }
   }
 
-  async onToolCallFinish(event: any): Promise<void> {
+  async onToolCallFinish(event: TelemetryToolCallFinishEvent): Promise<void> {
     const telemetryEvent: TelemetryEvent = {
       type: 'tool-finish',
       timestamp: Date.now(),
@@ -170,7 +211,7 @@ class FrontendAgentTelemetry implements TelemetryIntegration {
     }
   }
 
-  async onFinish(event: any): Promise<void> {
+  async onFinish(event: TelemetryFinishEvent): Promise<void> {
     const totalUsage = event.totalUsage;
     const telemetryEvent: TelemetryEvent = {
       type: 'finish',

@@ -58,7 +58,9 @@ export const outputNormalizerMiddleware: LanguageModelMiddleware = {
     const result = await doGenerate();
 
     // V3: 文本内容在 result.content 数组中，类型为 { type: 'text', text: '...' }
-    const textPart = result.content?.find((p: any) => p.type === 'text') as
+    const textPart = result.content?.find(
+      (p) => p.type === 'text',
+    ) as
       | { type: 'text'; text: string }
       | undefined;
     if (!textPart) return result;
@@ -96,7 +98,9 @@ export const outputNormalizerMiddleware: LanguageModelMiddleware = {
     }
 
     // 返回新对象，避免突变原始 result
-    const newContent = result.content.map((p: any) => (p === textPart ? { ...p, text } : p));
-    return { ...result, content: newContent };
+    const newContent = result.content.map((p) =>
+      p === textPart ? { ...p, text } : p,
+    );
+    return { ...result, content: newContent } as typeof result;
   },
 };
