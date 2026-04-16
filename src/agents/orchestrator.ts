@@ -33,7 +33,6 @@ import { SessionManager, type HandoffPackage } from '../session/index.js';
 import {
   createCheckpoint,
   saveCheckpoint,
-  loadCheckpoint,
   deleteCheckpoint,
   findResumableCheckpoint,
   isStepCompleted,
