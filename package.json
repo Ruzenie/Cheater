@@ -1,0 +1,30 @@
+{
+  "name": "frontend-agent",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "多模型前端 Agent — 需求精炼 / 设计分析 / 项目规划 / 代码制作 / 代码审计 / 代码组装",
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "demo:refine": "tsx demo/00-prompt-refine.ts",
+    "demo:design": "tsx demo/01-design-analyze.ts",
+    "demo:code": "tsx demo/02-code-produce.ts",
+    "demo:audit": "tsx demo/03-code-audit.ts",
+    "demo:full": "NODE_OPTIONS='--max-old-space-size=4096' tsx demo/04-full-pipeline.ts",
+    "demo:plan": "tsx demo/05-project-plan.ts",
+    "demo:assemble": "tsx demo/06-assemble.ts"
+  },
+  "dependencies": {
+    "@ai-sdk/openai": "^3.0.52",
+    "ai": "^6.0.159",
+    "dotenv": "^16.4.7",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "ts-node": "^10.9.2",
+    "tsx": "^4.21.0",
+    "typescript": "^5.7.0"
+  }
+}
