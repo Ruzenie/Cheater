@@ -18,15 +18,36 @@ async function main() {
       name: 'SearchInput',
       description: '带防抖的搜索输入框，支持清除按钮和加载状态',
       props: [
-        { name: 'placeholder', type: 'string', required: false, defaultValue: '"搜索..."', description: '占位文本' },
-        { name: 'onSearch', type: '(query: string) => void', required: true, description: '搜索回调' },
-        { name: 'debounceMs', type: 'number', required: false, defaultValue: '300', description: '防抖延迟' },
-        { name: 'loading', type: 'boolean', required: false, defaultValue: 'false', description: '加载状态' },
+        {
+          name: 'placeholder',
+          type: 'string',
+          required: false,
+          defaultValue: '"搜索..."',
+          description: '占位文本',
+        },
+        {
+          name: 'onSearch',
+          type: '(query: string) => void',
+          required: true,
+          description: '搜索回调',
+        },
+        {
+          name: 'debounceMs',
+          type: 'number',
+          required: false,
+          defaultValue: '300',
+          description: '防抖延迟',
+        },
+        {
+          name: 'loading',
+          type: 'boolean',
+          required: false,
+          defaultValue: 'false',
+          description: '加载状态',
+        },
       ],
       children: [],
-      states: [
-        { name: 'value', type: 'string', description: '输入框当前值' },
-      ],
+      states: [{ name: 'value', type: 'string', description: '输入框当前值' }],
       events: [
         { name: 'onSearch', payload: 'string', description: '防抖后触发搜索' },
         { name: 'onClear', payload: 'void', description: '清除输入内容' },
@@ -42,7 +63,9 @@ async function main() {
 
   console.log('\n═══ 代码生成结果 ═══\n');
   for (const comp of result.components) {
-    console.log(`📦 ${comp.componentName} (生成器: ${comp.generatorId}, 模型: ${[...new Set(comp.modelTiersUsed)].join(' → ')})`);
+    console.log(
+      `📦 ${comp.componentName} (生成器: ${comp.generatorId}, 模型: ${[...new Set(comp.modelTiersUsed)].join(' → ')})`,
+    );
     console.log(`   入口文件: ${comp.entryFileName}`);
     console.log(`   自检: ${comp.selfReviewResult.passed ? '✅ 通过' : '❌ 有问题'}`);
     if (comp.selfReviewResult.issues.length > 0) {

@@ -12,24 +12,41 @@ import { z } from 'zod';
 export const ComponentSpecSchema = z.object({
   name: z.string().describe('组件名称，PascalCase'),
   description: z.string().describe('组件职责描述'),
-  props: z.array(z.object({
-    name: z.string(),
-    type: z.string(),
-    required: z.boolean().optional().default(false),
-    defaultValue: z.string().optional(),
-    description: z.string().optional().default(''),
-  })).optional().default([]),
+  props: z
+    .array(
+      z.object({
+        name: z.string(),
+        type: z.string(),
+        required: z.boolean().optional().default(false),
+        defaultValue: z.string().optional(),
+        description: z.string().optional().default(''),
+      }),
+    )
+    .optional()
+    .default([]),
   children: z.array(z.string()).describe('子组件名称列表').optional().default([]),
-  states: z.array(z.object({
-    name: z.string(),
-    type: z.string(),
-    description: z.string().optional().default(''),
-  })).describe('内部状态').optional().default([]),
-  events: z.array(z.object({
-    name: z.string(),
-    payload: z.string().optional().default('void'),
-    description: z.string().optional().default(''),
-  })).describe('对外事件').optional().default([]),
+  states: z
+    .array(
+      z.object({
+        name: z.string(),
+        type: z.string(),
+        description: z.string().optional().default(''),
+      }),
+    )
+    .describe('内部状态')
+    .optional()
+    .default([]),
+  events: z
+    .array(
+      z.object({
+        name: z.string(),
+        payload: z.string().optional().default('void'),
+        description: z.string().optional().default(''),
+      }),
+    )
+    .describe('对外事件')
+    .optional()
+    .default([]),
 });
 
 export type ComponentSpec = z.infer<typeof ComponentSpecSchema>;
@@ -44,7 +61,10 @@ export const decomposeRequirement = tool({
   inputSchema: z.object({
     requirement: z.string().describe('前端需求描述'),
     framework: z.string().default('react').describe('前端框架，如 react, vue, svelte, solid 等'),
-    styleSystem: z.string().default('tailwind').describe('样式方案，如 tailwind, css-modules, styled-components, unocss, plain-css 等'),
+    styleSystem: z
+      .string()
+      .default('tailwind')
+      .describe('样式方案，如 tailwind, css-modules, styled-components, unocss, plain-css 等'),
   }),
   execute: async ({ requirement, framework, styleSystem }) => {
     // 这个工具本身不调用 LLM — 它只是收集和格式化输入
@@ -71,12 +91,14 @@ export const planResponsiveStrategy = tool({
   inputSchema: z.object({
     componentName: z.string(),
     componentDescription: z.string(),
-    breakpoints: z.object({
-      mobile: z.number().default(375),
-      tablet: z.number().default(768),
-      desktop: z.number().default(1024),
-      wide: z.number().default(1440),
-    }).optional(),
+    breakpoints: z
+      .object({
+        mobile: z.number().default(375),
+        tablet: z.number().default(768),
+        desktop: z.number().default(1024),
+        wide: z.number().default(1440),
+      })
+      .optional(),
   }),
   execute: async ({ componentName, componentDescription, breakpoints }) => {
     const bp = breakpoints ?? { mobile: 375, tablet: 768, desktop: 1024, wide: 1440 };

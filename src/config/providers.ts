@@ -25,26 +25,18 @@ export interface AllProviders {
 /**
  * 从环境变量中读取某个 Tier 的配置，支持回退到统一变量
  */
-function loadTierConfig(
-  tier: 'EXECUTOR' | 'WORKER' | 'REASONER',
-): ProviderConfig {
-  const apiKey =
-    process.env[`${tier}_API_KEY`] ??
-    process.env.LLM_API_KEY;
+function loadTierConfig(tier: 'EXECUTOR' | 'WORKER' | 'REASONER'): ProviderConfig {
+  const apiKey = process.env[`${tier}_API_KEY`] ?? process.env.LLM_API_KEY;
 
-  const baseURL =
-    process.env[`${tier}_BASE_URL`] ??
-    process.env.LLM_BASE_URL;
+  const baseURL = process.env[`${tier}_BASE_URL`] ?? process.env.LLM_BASE_URL;
 
-  const modelName =
-    process.env[`${tier}_MODEL`] ??
-    process.env.LLM_MODEL;
+  const modelName = process.env[`${tier}_MODEL`] ?? process.env.LLM_MODEL;
 
   if (!apiKey || !baseURL || !modelName) {
     throw new Error(
       `[providers] 缺少 ${tier} 配置。` +
-      `请设置 ${tier}_API_KEY / ${tier}_BASE_URL / ${tier}_MODEL，` +
-      `或设置 LLM_API_KEY / LLM_BASE_URL / LLM_MODEL 作为回退。`,
+        `请设置 ${tier}_API_KEY / ${tier}_BASE_URL / ${tier}_MODEL，` +
+        `或设置 LLM_API_KEY / LLM_BASE_URL / LLM_MODEL 作为回退。`,
     );
   }
 

@@ -14,7 +14,11 @@
  */
 
 import { type AllProviders } from '../config/index.js';
-import { classifyTask, detectCrossLayer, type TaskClassification } from '../config/task-taxonomy.js';
+import {
+  classifyTask,
+  detectCrossLayer,
+  type TaskClassification,
+} from '../config/task-taxonomy.js';
 import { getCodeGenerator } from '../generators/index.js';
 import { resolveFrameworkFromUserInput } from '../generators/router.js';
 import { runPromptRefiner, type RefinedRequirement } from './prompt-refiner.js';
@@ -98,24 +102,26 @@ function analyzeRequirement(requirement: string): {
 
   const pipeline = {
     design: needsDesign,
-    plan: true,       // 所有任务都需要结构规划
+    plan: true, // 所有任务都需要结构规划
     code: needsCode,
     audit: needsAudit,
-    assemble: true,   // 所有任务都需要组装
+    assemble: true, // 所有任务都需要组装
   };
 
   return { classification, crossLayer, pipeline };
 }
 
 function getDefaultSpecs(requirement: string) {
-  return [{
-    name: 'MainComponent',
-    description: requirement,
-    props: [],
-    children: [],
-    states: [],
-    events: [],
-  }];
+  return [
+    {
+      name: 'MainComponent',
+      description: requirement,
+      props: [],
+      children: [],
+      states: [],
+      events: [],
+    },
+  ];
 }
 
 // ── Agent 主函数 ──────────────────────────────────────
@@ -266,8 +272,19 @@ export async function runOrchestrator(
 
   // ── Step 1: 多维分类（零 LLM 成本）──
   let classification: TaskClassification;
-  let crossLayer: { isCrossLayer: boolean; viewScore: number; logicScore: number; suggestion?: string };
-  let pipeline: { design: boolean; plan: boolean; code: boolean; audit: boolean; assemble: boolean };
+  let crossLayer: {
+    isCrossLayer: boolean;
+    viewScore: number;
+    logicScore: number;
+    suggestion?: string;
+  };
+  let pipeline: {
+    design: boolean;
+    plan: boolean;
+    code: boolean;
+    audit: boolean;
+    assemble: boolean;
+  };
 
   if (isStepCompleted(checkpoint, 'classify')) {
     // 从 checkpoint 恢复
@@ -317,7 +334,12 @@ export async function runOrchestrator(
     console.log(`   ⚠️  预计需要会话交接（弱模型上下文可能不足）`);
   }
 
-  console.log(`   Pipeline：${Object.entries(pipeline).filter(([, v]) => v).map(([k]) => k).join(' → ')}`);
+  console.log(
+    `   Pipeline：${Object.entries(pipeline)
+      .filter(([, v]) => v)
+      .map(([k]) => k)
+      .join(' → ')}`,
+  );
 
   session.addDecision({
     what: `任务分类为 ${classification.layer}/${classification.category} (${classification.complexity})`,
@@ -349,7 +371,11 @@ export async function runOrchestrator(
     console.log('\n⚠️  上下文预估不足！生成交接包...');
     const handoff = session.generateHandoff();
     session.setNextSteps([
-      { priority: 'high', description: '在新会话中继续执行', estimatedTokens: classification.estimatedContextTokens },
+      {
+        priority: 'high',
+        description: '在新会话中继续执行',
+        estimatedTokens: classification.estimatedContextTokens,
+      },
     ]);
     result.handoff = handoff;
     result.totalCost = getTotalCost();
@@ -364,13 +390,17 @@ export async function runOrchestrator(
   if (pipeline.design) {
     if (isStepCompleted(checkpoint, 'design')) {
       console.log('\n═══ Step 2: 设计分析 ⏩ 已恢复 ═══');
-      console.log(`   组件树：${result.design?.componentTree.map((c) => c.name).join(', ') ?? '无'}`);
+      console.log(
+        `   组件树：${result.design?.componentTree.map((c) => c.name).join(', ') ?? '无'}`,
+      );
     } else {
       console.log('\n═══ Step 2: 设计分析 ═══');
 
       const budget = checkBudget(budgetLimit);
       if (budget.exceeded) {
-        console.log(`\n⚠️  预算已超限 ($${budget.currentCost.toFixed(4)} > $${budgetLimit})，停止执行`);
+        console.log(
+          `\n⚠️  预算已超限 ($${budget.currentCost.toFixed(4)} > $${budgetLimit})，停止执行`,
+        );
         result.totalCost = budget.currentCost;
         return result;
       }
@@ -415,12 +445,17 @@ export async function runOrchestrator(
   if (pipeline.plan || pipeline.code) {
     if (isStepCompleted(checkpoint, 'plan+code')) {
       console.log('\n═══ Step 3+4: 项目规划 ⚡ 代码生成 ⏩ 已恢复 ═══');
-      if (result.plan) console.log(`   规划：${result.plan.structure.projectName} | ${result.plan.structure.directories.length} 目录`);
+      if (result.plan)
+        console.log(
+          `   规划：${result.plan.structure.projectName} | ${result.plan.structure.directories.length} 目录`,
+        );
       if (result.code) console.log(`   代码：${result.code.totalComponents} 个组件`);
     } else {
       const budget = checkBudget(budgetLimit);
       if (budget.exceeded) {
-        console.log(`\n⚠️  预算已超限 ($${budget.currentCost.toFixed(4)} > $${budgetLimit})，跳过规划+生成`);
+        console.log(
+          `\n⚠️  预算已超限 ($${budget.currentCost.toFixed(4)} > $${budgetLimit})，跳过规划+生成`,
+        );
         result.totalCost = budget.currentCost;
       } else {
         console.log('\n═══ Step 3+4: 项目规划 ⚡ 代码生成（并行）═══');
@@ -474,7 +509,10 @@ export async function runOrchestrator(
 
               for (const comp of codeResult.components) {
                 for (const artifact of comp.artifacts) {
-                  session.addCodeArtifact(artifact.fileName, `${comp.componentName} - ${comp.generatorId} - ${comp.modelTiersUsed.join(',')}`);
+                  session.addCodeArtifact(
+                    artifact.fileName,
+                    `${comp.componentName} - ${comp.generatorId} - ${comp.modelTiersUsed.join(',')}`,
+                  );
                 }
               }
             }),
@@ -520,7 +558,11 @@ export async function runOrchestrator(
         console.log(`\n═══ Step 5: 代码审计 (第 ${iteration}/${maxAuditIterations} 轮) ═══`);
 
         const allCode = result.code.components
-          .flatMap((component) => component.artifacts.map((artifact) => `// ===== ${artifact.fileName} =====\n${artifact.content}`))
+          .flatMap((component) =>
+            component.artifacts.map(
+              (artifact) => `// ===== ${artifact.fileName} =====\n${artifact.content}`,
+            ),
+          )
           .join('\n\n');
 
         result.audit = await runCodeAuditor(allCode, providers, {
@@ -543,8 +585,12 @@ export async function runOrchestrator(
         }
 
         if (iteration < maxAuditIterations) {
-          session.addBlocker(`审计不达标 (${result.audit.overallScore}/${QUALITY_THRESHOLD})，需要第 ${iteration + 1} 轮迭代`);
-          console.log(`\n⚠️  质量不达标 (${result.audit.overallScore}/${QUALITY_THRESHOLD})，重新生成...`);
+          session.addBlocker(
+            `审计不达标 (${result.audit.overallScore}/${QUALITY_THRESHOLD})，需要第 ${iteration + 1} 轮迭代`,
+          );
+          console.log(
+            `\n⚠️  质量不达标 (${result.audit.overallScore}/${QUALITY_THRESHOLD})，重新生成...`,
+          );
 
           // 重新生成代码
           const specs = result.design?.componentTree ?? getDefaultSpecs(effectiveRequirement);
@@ -558,7 +604,10 @@ export async function runOrchestrator(
 
           for (const comp of result.code.components) {
             for (const artifact of comp.artifacts) {
-              session.addCodeArtifact(artifact.fileName, `${comp.componentName} - ${comp.generatorId} - ${comp.modelTiersUsed.join(',')}`);
+              session.addCodeArtifact(
+                artifact.fileName,
+                `${comp.componentName} - ${comp.generatorId} - ${comp.modelTiersUsed.join(',')}`,
+              );
             }
           }
 
@@ -599,25 +648,22 @@ export async function runOrchestrator(
       console.log('\n═══ Step 6: 代码组装 ═══');
 
       // 自动推导输出目录
-      const resolvedOutputDir = outputDir ?? path.resolve(
-        process.cwd(),
-        'output',
-        result.plan.structure.projectName || `frontend-agent-${Date.now()}`,
-      );
+      const resolvedOutputDir =
+        outputDir ??
+        path.resolve(
+          process.cwd(),
+          'output',
+          result.plan.structure.projectName || `frontend-agent-${Date.now()}`,
+        );
 
-      result.assembly = await runCodeAssembler(
-        result.plan.structure,
-        result.code,
-        providers,
-        {
-          framework: resolvedFramework,
-          styleMethod,
-          darkMode,
-          writeToFS,
-          outputDir: resolvedOutputDir,
-          pageTitle: result.plan.structure.projectName,
-        },
-      );
+      result.assembly = await runCodeAssembler(result.plan.structure, result.code, providers, {
+        framework: resolvedFramework,
+        styleMethod,
+        darkMode,
+        writeToFS,
+        outputDir: resolvedOutputDir,
+        pageTitle: result.plan.structure.projectName,
+      });
 
       session.addCompleted({
         description: `代码组装：${result.assembly.totalFiles} 个文件`,
@@ -643,7 +689,9 @@ export async function runOrchestrator(
   if (pipeline.audit && result.assembly) {
     console.log('\n═══ Step 7: 最终审计 ═══');
 
-    const allCode = result.assembly.files.map((file) => `// ===== ${file.filePath} =====\n${file.content}`).join('\n\n');
+    const allCode = result.assembly.files
+      .map((file) => `// ===== ${file.filePath} =====\n${file.content}`)
+      .join('\n\n');
 
     const finalAudit = await runCodeAuditor(allCode, providers, {
       framework: resolvedFramework,
@@ -676,7 +724,9 @@ export async function runOrchestrator(
 
   // ── 上下文使用报告 ──
   const usage = session.getContextUsage();
-  console.log(`📊 上下文使用：${usage.currentTokens}/${usage.maxTokens} tokens (${usage.usagePercent}%)`);
+  console.log(
+    `📊 上下文使用：${usage.currentTokens}/${usage.maxTokens} tokens (${usage.usagePercent}%)`,
+  );
   console.log(`💰 总成本：$${result.totalCost.toFixed(6)}\n`);
 
   // ── 最终交付物总结 ──
@@ -686,15 +736,21 @@ export async function runOrchestrator(
   if (refinedResult) {
     console.log(`║  精炼：${refinedResult.refined.slice(0, 46)}`);
   }
-  console.log(`║  分类：${classification.layer}/${classification.category} (${classification.complexity})`);
+  console.log(
+    `║  分类：${classification.layer}/${classification.category} (${classification.complexity})`,
+  );
   if (result.design) {
     console.log(`║  组件：${result.design.componentTree.length} 个`);
   }
   if (result.plan) {
-    console.log(`║  规划：${result.plan.structure.projectName} | ${result.plan.structure.directories.length} 目录 | ${result.plan.structure.files.length} 文件`);
+    console.log(
+      `║  规划：${result.plan.structure.projectName} | ${result.plan.structure.directories.length} 目录 | ${result.plan.structure.files.length} 文件`,
+    );
   }
   if (result.code) {
-    console.log(`║  代码：${result.code.components.flatMap((component) => component.artifacts.map((artifact) => artifact.fileName)).join(', ')}`);
+    console.log(
+      `║  代码：${result.code.components.flatMap((component) => component.artifacts.map((artifact) => artifact.fileName)).join(', ')}`,
+    );
   }
   if (result.audit) {
     console.log(`║  审计：${result.audit.overallScore}/10`);
@@ -708,7 +764,9 @@ export async function runOrchestrator(
       console.log(`║  ⚠️  未写入磁盘（writeToFS: false）`);
     }
   }
-  console.log(`║  结果：${result.finalVerdict === 'passed' ? '✅ 通过' : result.finalVerdict === 'failed' ? '❌ 不通过' : '⚠️ 部分完成'}`);
+  console.log(
+    `║  结果：${result.finalVerdict === 'passed' ? '✅ 通过' : result.finalVerdict === 'failed' ? '❌ 不通过' : '⚠️ 部分完成'}`,
+  );
   console.log(`║  轮次：${result.iterations}`);
   console.log(`║  成本：$${result.totalCost.toFixed(6)}`);
   console.log('╚══════════════════════════════════════════════════════════╝\n');

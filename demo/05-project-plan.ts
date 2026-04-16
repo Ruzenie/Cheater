@@ -16,7 +16,8 @@ import { runProjectPlanner } from '../src/agents/project-planner.js';
 async function main() {
   const providers = createProviders();
 
-  const requirement = '实现一个响应式的博客首页，包含导航栏、文章列表、侧边栏标签云、底部版权信息，支持暗色模式切换';
+  const requirement =
+    '实现一个响应式的博客首页，包含导航栏、文章列表、侧边栏标签云、底部版权信息，支持暗色模式切换';
 
   console.log('═══ Step 1: 设计分析 ═══\n');
   const design = await runDesignAnalyzer(requirement, providers, {
@@ -47,18 +48,43 @@ async function main() {
 
   console.log(`\n📄 文件清单 (${structure.files.length} 个):`);
   for (const file of structure.files) {
-    const icon = file.role === 'config' ? '⚙️' : file.role === 'entry' ? '🚀' : file.role === 'component' ? '🧩' : file.role === 'style' ? '🎨' : '📝';
+    const icon =
+      file.role === 'config'
+        ? '⚙️'
+        : file.role === 'entry'
+          ? '🚀'
+          : file.role === 'component'
+            ? '🧩'
+            : file.role === 'style'
+              ? '🎨'
+              : '📝';
     console.log(`  ${icon} ${file.filePath} [${file.role}] — ${file.description}`);
   }
 
   console.log(`\n🧩 组件映射 (${structure.componentMapping.length} 个):`);
   for (const cm of structure.componentMapping) {
-    console.log(`  ${cm.isLayout ? '🏗️' : '📦'} ${cm.componentName} → ${cm.targetDir}/ (import: ${cm.importPath})`);
+    console.log(
+      `  ${cm.isLayout ? '🏗️' : '📦'} ${cm.componentName} → ${cm.targetDir}/ (import: ${cm.importPath})`,
+    );
   }
 
-  console.log(`\n📦 依赖 (${Object.keys(structure.dependencies).length} + ${Object.keys(structure.devDependencies).length} dev):`);
-  console.log(`  生产: ${Object.entries(structure.dependencies).map(([k, v]) => `${k}@${v}`).join(', ') || '无'}`);
-  console.log(`  开发: ${Object.entries(structure.devDependencies).map(([k, v]) => `${k}@${v}`).join(', ') || '无'}`);
+  console.log(
+    `\n📦 依赖 (${Object.keys(structure.dependencies).length} + ${Object.keys(structure.devDependencies).length} dev):`,
+  );
+  console.log(
+    `  生产: ${
+      Object.entries(structure.dependencies)
+        .map(([k, v]) => `${k}@${v}`)
+        .join(', ') || '无'
+    }`,
+  );
+  console.log(
+    `  开发: ${
+      Object.entries(structure.devDependencies)
+        .map(([k, v]) => `${k}@${v}`)
+        .join(', ') || '无'
+    }`,
+  );
 
   console.log(`\n🚀 启动命令:`);
   console.log(`  ${structure.installCommand}`);

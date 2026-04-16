@@ -15,9 +15,7 @@ import { getWrappedModel, type AllProviders } from '../config/index.js';
 import { frontendAgentTelemetry } from '../middleware/telemetry.js';
 import { consumeTextStream } from '../utils/streaming.js';
 import { safeParseJson } from '../utils/json.js';
-import {
-  ComponentSpecSchema,
-} from '../tools/design/index.js';
+import { ComponentSpecSchema } from '../tools/design/index.js';
 
 // ── 输出 Schema ──────────────────────────────────────
 
@@ -28,10 +26,16 @@ const ResponsiveStrategySchema = z.object({
 });
 
 const StateDesignSchema = z.object({
-  localStates: z.array(z.object({
-    component: z.string(),
-    states: z.array(z.string()),
-  })).describe('各组件的本地状态').optional().default([]),
+  localStates: z
+    .array(
+      z.object({
+        component: z.string(),
+        states: z.array(z.string()),
+      }),
+    )
+    .describe('各组件的本地状态')
+    .optional()
+    .default([]),
   sharedStates: z.array(z.string()).describe('跨组件共享状态').optional().default([]),
   recommendation: z.string().describe('推荐的状态管理方案'),
 });
@@ -64,9 +68,7 @@ function normalizeComponentTree(raw: any): any[] {
 
   // 如果是对象（key = 组件名），转为数组
   if (typeof raw === 'object' && raw !== null) {
-    return Object.values(raw).filter(
-      (v: any) => typeof v === 'object' && v !== null && v.name,
-    );
+    return Object.values(raw).filter((v: any) => typeof v === 'object' && v !== null && v.name);
   }
 
   return [];
@@ -123,7 +125,10 @@ export async function runDesignAnalyzer(
     temperature: 0.3,
     experimental_telemetry: telemetryConfig('design-analyzer:decompose'),
   });
-  const decomposeText = await consumeTextStream(decomposeStream.textStream, { prefix: '      [decompose] ', echo: false });
+  const decomposeText = await consumeTextStream(decomposeStream.textStream, {
+    prefix: '      [decompose] ',
+    echo: false,
+  });
 
   // 宽松解析：兼容模型返回的各种格式偏差
   let parsedComponents: z.infer<typeof ComponentSpecSchema>[];
@@ -151,14 +156,16 @@ export async function runDesignAnalyzer(
     }
   } catch (e: any) {
     console.warn(`   ⚠️  组件树解析失败 (${e.message})，使用 fallback`);
-    parsedComponents = [{
-      name: 'MainComponent',
-      description: requirement,
-      props: [],
-      children: [],
-      states: [],
-      events: [],
-    }];
+    parsedComponents = [
+      {
+        name: 'MainComponent',
+        description: requirement,
+        props: [],
+        children: [],
+        states: [],
+        events: [],
+      },
+    ];
   }
 
   console.log(`   ✅ 拆解完成，共 ${parsedComponents.length} 个组件`);
@@ -219,11 +226,13 @@ export async function runDesignAnalyzer(
   try {
     const rawResponsive = safeParseJson(responsiveText);
     const parsed = ResponsiveStrategySchema.safeParse(rawResponsive);
-    responsiveStrategy = parsed.success ? parsed.data : {
-      approach: 'mobile-first',
-      breakpoints: { mobile: 375, tablet: 768, desktop: 1024 },
-      notes: [responsiveText.slice(0, 200)],
-    };
+    responsiveStrategy = parsed.success
+      ? parsed.data
+      : {
+          approach: 'mobile-first',
+          breakpoints: { mobile: 375, tablet: 768, desktop: 1024 },
+          notes: [responsiveText.slice(0, 200)],
+        };
   } catch {
     responsiveStrategy = {
       approach: 'mobile-first',
@@ -237,11 +246,13 @@ export async function runDesignAnalyzer(
   try {
     const rawState = safeParseJson(stateText);
     const parsed = StateDesignSchema.safeParse(rawState);
-    stateDesign = parsed.success ? parsed.data : {
-      localStates: [],
-      sharedStates: [],
-      recommendation: rawState.recommendation ?? stateText.slice(0, 200),
-    };
+    stateDesign = parsed.success
+      ? parsed.data
+      : {
+          localStates: [],
+          sharedStates: [],
+          recommendation: rawState.recommendation ?? stateText.slice(0, 200),
+        };
   } catch {
     stateDesign = {
       localStates: [],

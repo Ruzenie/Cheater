@@ -101,7 +101,10 @@ function placeComponentArtifacts(
 /**
  * 生成组件目录的 index.ts barrel re-export
  */
-function generateComponentIndex(component: CodeOutput, mapping: ComponentMapping): AssembledFile | null {
+function generateComponentIndex(
+  component: CodeOutput,
+  mapping: ComponentMapping,
+): AssembledFile | null {
   if (mapping.targetDir.includes('html+css+js') || !component.entryFileName) {
     return null;
   }
@@ -242,22 +245,23 @@ ${allHtml.join('\n\n')}
     // 生成合并后的 JS（每个组件用 IIFE 隔离作用域，避免变量名冲突）
     assembledFiles.push({
       filePath: 'scripts/main.js',
-      content: `'use strict';\n\n${allJs.map((js) => {
-        // 去掉组件内部重复的 'use strict' 和 @ts-check
-        const cleaned = js
-          .replace(/^\/\/ ═══.*═══\n/, '')  // 先移除分隔注释
-          .replace(/['"]use strict['"];?\s*/g, '')
-          .replace(/\/\/\s*@ts-check\s*/g, '')
-          .trim();
-        // 从原始 js 中提取组件名注释
-        const header = js.match(/^\/\/ ═══.*═══/)?.[0] ?? '';
-        return `${header}\n;(function() {\n${cleaned}\n})();`;
-      }).join('\n\n')}`,
+      content: `'use strict';\n\n${allJs
+        .map((js) => {
+          // 去掉组件内部重复的 'use strict' 和 @ts-check
+          const cleaned = js
+            .replace(/^\/\/ ═══.*═══\n/, '') // 先移除分隔注释
+            .replace(/['"]use strict['"];?\s*/g, '')
+            .replace(/\/\/\s*@ts-check\s*/g, '')
+            .trim();
+          // 从原始 js 中提取组件名注释
+          const header = js.match(/^\/\/ ═══.*═══/)?.[0] ?? '';
+          return `${header}\n;(function() {\n${cleaned}\n})();`;
+        })
+        .join('\n\n')}`,
       source: 'merged',
     });
 
     log.push(`✅ 合并完成: index.html + styles/main.css + scripts/main.js`);
-
   } else {
     // ── 框架项目（React/Vue/Svelte）：按组件目录放置 ──
 
@@ -286,7 +290,9 @@ ${allHtml.join('\n\n')}
         const indexFile = generateComponentIndex(component, fallbackMapping);
         if (indexFile) assembledFiles.push(indexFile);
 
-        log.push(`⚠️ 组件 ${component.componentName} 无映射，放置到默认位置: ${fallbackMapping.targetDir}/`);
+        log.push(
+          `⚠️ 组件 ${component.componentName} 无映射，放置到默认位置: ${fallbackMapping.targetDir}/`,
+        );
         continue;
       }
 
@@ -304,9 +310,8 @@ ${allHtml.join('\n\n')}
   // ── Phase 3: Barrel 文件（零 LLM 成本）──
 
   if (projectStructure.framework !== 'html+css+js') {
-    const componentBaseDir = projectStructure.framework === 'svelte'
-      ? 'src/lib/components'
-      : 'src/components';
+    const componentBaseDir =
+      projectStructure.framework === 'svelte' ? 'src/lib/components' : 'src/components';
 
     const barrel = generateComponentsBarrel(projectStructure.componentMapping, componentBaseDir);
     assembledFiles.push(barrel);
@@ -323,8 +328,10 @@ ${allHtml.join('\n\n')}
       name: cm.componentName,
       importPath: cm.importPath,
       isLayout: cm.isLayout,
-      description: codeOutput.components.find((c) => c.componentName === cm.componentName)
-        ?.artifacts[0]?.content.slice(0, 100) ?? '',
+      description:
+        codeOutput.components
+          .find((c) => c.componentName === cm.componentName)
+          ?.artifacts[0]?.content.slice(0, 100) ?? '',
     }));
 
     const entryStream = streamText({
@@ -363,7 +370,10 @@ ${componentInfoForEntry.map((c) => `- ${c.name} (${c.isLayout ? '布局' : '内�
       experimental_telemetry: telemetryConfig(`code-assembler:entry:${projectStructure.framework}`),
     });
 
-    const entryText = await consumeTextStream(entryStream.textStream, { prefix: '      [entry] ', echo: false });
+    const entryText = await consumeTextStream(entryStream.textStream, {
+      prefix: '      [entry] ',
+      echo: false,
+    });
 
     try {
       const raw = safeParseJson(entryText);
@@ -409,13 +419,12 @@ ${componentInfoForEntry.map((c) => `- ${c.name} (${c.isLayout ? '布局' : '内�
 
   // ── Phase 5: 全局样式（如果入口文件没有生成）──
 
-  const hasGlobalStyle = assembledFiles.some((f) =>
-    f.filePath.includes('globals.css') || f.filePath === 'styles/main.css',
+  const hasGlobalStyle = assembledFiles.some(
+    (f) => f.filePath.includes('globals.css') || f.filePath === 'styles/main.css',
   );
   if (!hasGlobalStyle) {
-    const stylePath = projectStructure.framework === 'html+css+js'
-      ? 'styles/main.css'
-      : 'src/styles/globals.css';
+    const stylePath =
+      projectStructure.framework === 'html+css+js' ? 'styles/main.css' : 'src/styles/globals.css';
     assembledFiles.push({
       filePath: stylePath,
       content: generateGlobalsCss(darkMode),
@@ -444,7 +453,11 @@ ${componentInfoForEntry.map((c) => `- ${c.name} (${c.isLayout ? '布局' : '内�
     const resolvedOut = path.resolve(outputDir);
     const dangerous = ['/', '/usr', '/etc', '/var', '/tmp', '/home', '/root'];
     const home = process.env.HOME ?? process.env.USERPROFILE ?? '';
-    if (dangerous.includes(resolvedOut) || resolvedOut === home || resolvedOut.split(path.sep).length <= 2) {
+    if (
+      dangerous.includes(resolvedOut) ||
+      resolvedOut === home ||
+      resolvedOut.split(path.sep).length <= 2
+    ) {
       throw new Error(`❌ 拒绝删除危险路径: ${resolvedOut}`);
     }
     await rm(outputDir, { recursive: true, force: true });
@@ -469,13 +482,14 @@ ${componentInfoForEntry.map((c) => `- ${c.name} (${c.isLayout ? '布局' : '内�
 
   // ── 总结 ──
 
-  const entryPoint = projectStructure.framework === 'html+css+js'
-    ? 'index.html'
-    : projectStructure.framework === 'svelte'
-      ? 'src/routes/+page.svelte'
-      : projectStructure.framework === 'vue'
-        ? 'src/main.ts'
-        : 'src/main.tsx';
+  const entryPoint =
+    projectStructure.framework === 'html+css+js'
+      ? 'index.html'
+      : projectStructure.framework === 'svelte'
+        ? 'src/routes/+page.svelte'
+        : projectStructure.framework === 'vue'
+          ? 'src/main.ts'
+          : 'src/main.tsx';
 
   console.log(`\n🔧 [Code Assembler] 组装完成！`);
   console.log(`   📦 项目：${projectStructure.projectName}`);
@@ -528,13 +542,17 @@ body {
   background-color: #ffffff;
 }
 
-${darkMode ? `@media (prefers-color-scheme: dark) {
+${
+  darkMode
+    ? `@media (prefers-color-scheme: dark) {
   body {
     color: #f0f0f0;
     background-color: #1a1a1a;
   }
 }
-` : ''}img,
+`
+    : ''
+}img,
 picture,
 video,
 canvas,

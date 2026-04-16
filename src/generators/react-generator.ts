@@ -19,14 +19,17 @@ function buildReactScaffold(spec: ComponentSpec, styleMethod: string): Generated
     .join('\n');
   const destructure = spec.props.map((p) => p.name).join(', ');
 
-  const imports = ['import React from \'react\';'];
+  const imports = ["import React from 'react';"];
   if (styleMethod === 'css-modules') {
     imports.push(`import styles from './${spec.name}.module.css';`);
   }
 
   const classAttr =
-    styleMethod === 'css-modules' ? ' className={styles.root}' :
-    styleMethod === 'tailwind' ? ' className=""' : '';
+    styleMethod === 'css-modules'
+      ? ' className={styles.root}'
+      : styleMethod === 'tailwind'
+        ? ' className=""'
+        : '';
 
   const content = `${imports.join('\n')}\n\n${propsInterface}\n\nexport default function ${spec.name}({\n${defaultProps ? `${defaultProps}\n` : ''}    ${destructure}${hasChildren ? ', children' : ''}\n}: ${spec.name}Props) {\n  return (\n    <div${classAttr}>\n      {/* TODO: 实现 ${spec.name} 组件内容 */}\n      ${hasChildren ? '{children}' : ''}\n    </div>\n  );\n}`;
 

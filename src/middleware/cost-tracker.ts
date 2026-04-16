@@ -16,7 +16,7 @@ export interface CostRecord {
   modelId: string;
   inputTokens: number;
   outputTokens: number;
-  estimatedCost: number;          // 单位：美元
+  estimatedCost: number; // 单位：美元
   durationMs: number;
 }
 
@@ -26,18 +26,14 @@ const records: CostRecord[] = [];
 
 // 粗略定价（每 1M token），可根据实际情况调整
 const PRICING: Record<string, { input: number; output: number }> = {
-  'doubao-lite':       { input: 0.3,   output: 0.6   },
-  'deepseek-chat':     { input: 1.0,   output: 2.0   },
-  'deepseek-reasoner': { input: 4.0,   output: 16.0  },
+  'doubao-lite': { input: 0.3, output: 0.6 },
+  'deepseek-chat': { input: 1.0, output: 2.0 },
+  'deepseek-reasoner': { input: 4.0, output: 16.0 },
   // 默认定价（未知模型）
-  default:             { input: 2.0,   output: 6.0   },
+  default: { input: 2.0, output: 6.0 },
 };
 
-function estimateCost(
-  modelId: string,
-  inputTokens: number,
-  outputTokens: number,
-): number {
+function estimateCost(modelId: string, inputTokens: number, outputTokens: number): number {
   // 从 modelId 中提取可识别的模型名
   const key = Object.keys(PRICING).find((k) => modelId.includes(k)) ?? 'default';
   const price = PRICING[key];
@@ -54,8 +50,14 @@ export const costTrackerMiddleware: LanguageModelMiddleware = {
     const result = await doGenerate();
     const duration = Date.now() - start;
 
-    const inputTokens = typeof result.usage?.inputTokens === 'number' ? result.usage.inputTokens : (result.usage?.inputTokens as any)?.total ?? 0;
-    const outputTokens = typeof result.usage?.outputTokens === 'number' ? result.usage.outputTokens : (result.usage?.outputTokens as any)?.total ?? 0;
+    const inputTokens =
+      typeof result.usage?.inputTokens === 'number'
+        ? result.usage.inputTokens
+        : ((result.usage?.inputTokens as any)?.total ?? 0);
+    const outputTokens =
+      typeof result.usage?.outputTokens === 'number'
+        ? result.usage.outputTokens
+        : ((result.usage?.outputTokens as any)?.total ?? 0);
     const modelId = model.modelId ?? 'unknown';
 
     const record: CostRecord = {
@@ -75,7 +77,7 @@ export const costTrackerMiddleware: LanguageModelMiddleware = {
     if (process.env.DEBUG_COST === 'true') {
       console.log(
         `[cost] ${record.modelId} | ${inputTokens}+${outputTokens} tokens | ` +
-        `$${record.estimatedCost.toFixed(6)} | ${duration}ms`,
+          `$${record.estimatedCost.toFixed(6)} | ${duration}ms`,
       );
     }
 
@@ -95,14 +97,26 @@ export const costTrackerMiddleware: LanguageModelMiddleware = {
       transform(chunk: any, controller: any) {
         // 捕获各种可能包含 usage 信息的 chunk 格式
         if (chunk.type === 'usage') {
-          totalInputTokens = typeof chunk.inputTokens === 'number' ? chunk.inputTokens : chunk.inputTokens?.total ?? totalInputTokens;
-          totalOutputTokens = typeof chunk.outputTokens === 'number' ? chunk.outputTokens : chunk.outputTokens?.total ?? totalOutputTokens;
+          totalInputTokens =
+            typeof chunk.inputTokens === 'number'
+              ? chunk.inputTokens
+              : (chunk.inputTokens?.total ?? totalInputTokens);
+          totalOutputTokens =
+            typeof chunk.outputTokens === 'number'
+              ? chunk.outputTokens
+              : (chunk.outputTokens?.total ?? totalOutputTokens);
         }
         if (chunk.type === 'finish' || chunk.type === 'step-finish') {
           const usage = chunk.usage ?? chunk.experimental_providerMetadata?.usage;
           if (usage) {
-            totalInputTokens = typeof usage.inputTokens === 'number' ? usage.inputTokens : usage.inputTokens?.total ?? totalInputTokens;
-            totalOutputTokens = typeof usage.outputTokens === 'number' ? usage.outputTokens : usage.outputTokens?.total ?? totalOutputTokens;
+            totalInputTokens =
+              typeof usage.inputTokens === 'number'
+                ? usage.inputTokens
+                : (usage.inputTokens?.total ?? totalInputTokens);
+            totalOutputTokens =
+              typeof usage.outputTokens === 'number'
+                ? usage.outputTokens
+                : (usage.outputTokens?.total ?? totalOutputTokens);
           }
         }
         controller.enqueue(chunk);
@@ -129,7 +143,7 @@ export const costTrackerMiddleware: LanguageModelMiddleware = {
         if (process.env.DEBUG_COST === 'true') {
           console.log(
             `[cost:stream] ${record.modelId} | ${inputTokens}+${outputTokens} tokens | ` +
-            `$${record.estimatedCost.toFixed(6)} | ${duration}ms`,
+              `$${record.estimatedCost.toFixed(6)} | ${duration}ms`,
           );
         }
       },
@@ -176,7 +190,9 @@ export function printCostReport(): void {
   const byModel = getCostByModel();
   for (const [model, stats] of Object.entries(byModel)) {
     console.log(`║  ${model.padEnd(22)} ${stats.calls} 次调用`);
-    console.log(`║    tokens: ${(stats.tokens).toLocaleString().padStart(10)}  cost: $${stats.cost.toFixed(6)}`);
+    console.log(
+      `║    tokens: ${stats.tokens.toLocaleString().padStart(10)}  cost: $${stats.cost.toFixed(6)}`,
+    );
   }
 
   console.log('╠══════════════════════════════════════════╣');

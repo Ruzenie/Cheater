@@ -13,10 +13,13 @@ import { z } from 'zod';
 
 // ── 框架标准目录模板 ──────────────────────────────
 
-const FRAMEWORK_STRUCTURES: Record<string, {
-  directories: string[];
-  entryFiles: Array<{ path: string; role: string }>;
-}> = {
+const FRAMEWORK_STRUCTURES: Record<
+  string,
+  {
+    directories: string[];
+    entryFiles: Array<{ path: string; role: string }>;
+  }
+> = {
   react: {
     directories: [
       'src',
@@ -76,14 +79,7 @@ const FRAMEWORK_STRUCTURES: Record<string, {
     ],
   },
   'html+css+js': {
-    directories: [
-      'components',
-      'styles',
-      'scripts',
-      'assets',
-      'assets/images',
-      'assets/fonts',
-    ],
+    directories: ['components', 'styles', 'scripts', 'assets', 'assets/images', 'assets/fonts'],
     entryFiles: [
       { path: 'index.html', role: 'entry' },
       { path: 'styles/main.css', role: 'style' },
@@ -94,32 +90,35 @@ const FRAMEWORK_STRUCTURES: Record<string, {
 
 // ── 依赖映射表 ──────────────────────────────────
 
-const FRAMEWORK_DEPENDENCIES: Record<string, {
-  dependencies: Record<string, string>;
-  devDependencies: Record<string, string>;
-}> = {
+const FRAMEWORK_DEPENDENCIES: Record<
+  string,
+  {
+    dependencies: Record<string, string>;
+    devDependencies: Record<string, string>;
+  }
+> = {
   react: {
     dependencies: {
-      'react': '^19.0.0',
+      react: '^19.0.0',
       'react-dom': '^19.0.0',
     },
     devDependencies: {
       '@types/react': '^19.0.0',
       '@types/react-dom': '^19.0.0',
       '@vitejs/plugin-react': '^4.4.0',
-      'typescript': '^5.7.0',
-      'vite': '^6.0.0',
+      typescript: '^5.7.0',
+      vite: '^6.0.0',
     },
   },
   vue: {
     dependencies: {
-      'vue': '^3.5.0',
+      vue: '^3.5.0',
     },
     devDependencies: {
       '@vitejs/plugin-vue': '^5.2.0',
-      'typescript': '^5.7.0',
+      typescript: '^5.7.0',
       'vue-tsc': '^2.2.0',
-      'vite': '^6.0.0',
+      vite: '^6.0.0',
     },
   },
   svelte: {
@@ -127,9 +126,9 @@ const FRAMEWORK_DEPENDENCIES: Record<string, {
     devDependencies: {
       '@sveltejs/adapter-auto': '^4.0.0',
       '@sveltejs/kit': '^2.15.0',
-      'svelte': '^5.0.0',
-      'typescript': '^5.7.0',
-      'vite': '^6.0.0',
+      svelte: '^5.0.0',
+      typescript: '^5.7.0',
+      vite: '^6.0.0',
     },
   },
   'html+css+js': {
@@ -138,14 +137,17 @@ const FRAMEWORK_DEPENDENCIES: Record<string, {
   },
 };
 
-const STYLE_DEPENDENCIES: Record<string, {
-  dependencies: Record<string, string>;
-  devDependencies: Record<string, string>;
-}> = {
+const STYLE_DEPENDENCIES: Record<
+  string,
+  {
+    dependencies: Record<string, string>;
+    devDependencies: Record<string, string>;
+  }
+> = {
   tailwind: {
     dependencies: {},
     devDependencies: {
-      'tailwindcss': '^4.0.0',
+      tailwindcss: '^4.0.0',
       '@tailwindcss/vite': '^4.0.0',
     },
   },
@@ -160,7 +162,7 @@ const STYLE_DEPENDENCIES: Record<string, {
   sass: {
     dependencies: {},
     devDependencies: {
-      'sass': '^1.80.0',
+      sass: '^1.80.0',
     },
   },
   'styled-components': {
@@ -173,11 +175,14 @@ const STYLE_DEPENDENCIES: Record<string, {
   },
 };
 
-const FEATURE_DEPENDENCIES: Record<string, {
-  dependencies: Record<string, string>;
-  devDependencies: Record<string, string>;
-  directories?: string[];
-}> = {
+const FEATURE_DEPENDENCIES: Record<
+  string,
+  {
+    dependencies: Record<string, string>;
+    devDependencies: Record<string, string>;
+    directories?: string[];
+  }
+> = {
   router: {
     dependencies: { 'react-router-dom': '^7.0.0' },
     devDependencies: {},
@@ -189,12 +194,12 @@ const FEATURE_DEPENDENCIES: Record<string, {
     directories: ['src/views'],
   },
   'state-management': {
-    dependencies: { 'zustand': '^5.0.0' },
+    dependencies: { zustand: '^5.0.0' },
     devDependencies: {},
     directories: ['src/stores'],
   },
   pinia: {
-    dependencies: { 'pinia': '^2.3.0' },
+    dependencies: { pinia: '^2.3.0' },
     devDependencies: {},
     directories: ['src/stores'],
   },
@@ -203,7 +208,7 @@ const FEATURE_DEPENDENCIES: Record<string, {
     devDependencies: {},
   },
   'form-validation': {
-    dependencies: { 'zod': '^3.24.0', 'react-hook-form': '^7.54.0', '@hookform/resolvers': '^3.9.0' },
+    dependencies: { zod: '^3.24.0', 'react-hook-form': '^7.54.0', '@hookform/resolvers': '^3.9.0' },
     devDependencies: {},
   },
   'icon-library': {
@@ -211,14 +216,14 @@ const FEATURE_DEPENDENCIES: Record<string, {
     devDependencies: {},
   },
   'http-client': {
-    dependencies: { 'axios': '^1.7.0' },
+    dependencies: { axios: '^1.7.0' },
     devDependencies: {},
     directories: ['src/api'],
   },
   testing: {
     dependencies: {},
     devDependencies: {
-      'vitest': '^2.1.0',
+      vitest: '^2.1.0',
       '@testing-library/react': '^16.1.0',
       '@testing-library/jest-dom': '^6.6.0',
     },
@@ -352,21 +357,35 @@ export const planProjectStructure = tool({
     hasRouter: z.boolean().default(false).describe('是否需要路由'),
     hasStateManagement: z.boolean().default(false).describe('是否需要全局状态管理'),
     styleMethod: z.string().default('tailwind').describe('样式方案'),
-    features: z.array(z.string()).optional().default([]).describe('额外功能需求：animation, form-validation, http-client 等'),
+    features: z
+      .array(z.string())
+      .optional()
+      .default([])
+      .describe('额外功能需求：animation, form-validation, http-client 等'),
   }),
-  execute: async ({ framework, components, hasRouter, hasStateManagement, styleMethod, features }) => {
-    const fwKey = framework.toLowerCase().includes('html') ? 'html+css+js' : framework.toLowerCase();
+  execute: async ({
+    framework,
+    components,
+    hasRouter,
+    hasStateManagement,
+    styleMethod,
+    features,
+  }) => {
+    const fwKey = framework.toLowerCase().includes('html')
+      ? 'html+css+js'
+      : framework.toLowerCase();
     const structure = FRAMEWORK_STRUCTURES[fwKey] ?? FRAMEWORK_STRUCTURES.react;
 
     const directories = [...structure.directories];
     const componentEntries: Array<{ component: string; directory: string; files: string[] }> = [];
 
     // 组件目录规划
-    const componentBaseDir = fwKey === 'html+css+js'
-      ? 'components'
-      : fwKey === 'svelte'
-        ? 'src/lib/components'
-        : 'src/components';
+    const componentBaseDir =
+      fwKey === 'html+css+js'
+        ? 'components'
+        : fwKey === 'svelte'
+          ? 'src/lib/components'
+          : 'src/components';
 
     for (const name of components) {
       const dir = `${componentBaseDir}/${name}`;
@@ -413,7 +432,9 @@ export const planProjectStructure = tool({
 export const generateConfigFile = tool({
   description: '生成项目配置文件内容（package.json, tsconfig.json, vite.config.ts, .gitignore 等）',
   inputSchema: z.object({
-    configType: z.enum(['package.json', 'tsconfig.json', 'vite.config', 'gitignore']).describe('配置文件类型'),
+    configType: z
+      .enum(['package.json', 'tsconfig.json', 'vite.config', 'gitignore'])
+      .describe('配置文件类型'),
     framework: z.string().describe('目标框架'),
     projectName: z.string().default('my-app').describe('项目名'),
     styleMethod: z.string().default('tailwind').describe('样式方案'),
@@ -421,20 +442,41 @@ export const generateConfigFile = tool({
     devDependencies: z.record(z.string()).optional().describe('额外开发依赖'),
     scripts: z.record(z.string()).optional().describe('自定义 npm scripts'),
   }),
-  execute: async ({ configType, framework, projectName, styleMethod, dependencies, devDependencies, scripts }) => {
-    const fwKey = framework.toLowerCase().includes('html') ? 'html+css+js' : framework.toLowerCase();
+  execute: async ({
+    configType,
+    framework,
+    projectName,
+    styleMethod,
+    dependencies,
+    devDependencies,
+    scripts,
+  }) => {
+    const fwKey = framework.toLowerCase().includes('html')
+      ? 'html+css+js'
+      : framework.toLowerCase();
 
     switch (configType) {
       case 'package.json': {
         const fwDeps = FRAMEWORK_DEPENDENCIES[fwKey] ?? { dependencies: {}, devDependencies: {} };
-        const styleDeps = STYLE_DEPENDENCIES[styleMethod] ?? { dependencies: {}, devDependencies: {} };
+        const styleDeps = STYLE_DEPENDENCIES[styleMethod] ?? {
+          dependencies: {},
+          devDependencies: {},
+        };
         return {
           fileName: 'package.json',
           content: generatePackageJson({
             projectName,
             framework: fwKey,
-            dependencies: { ...fwDeps.dependencies, ...styleDeps.dependencies, ...(dependencies ?? {}) },
-            devDependencies: { ...fwDeps.devDependencies, ...styleDeps.devDependencies, ...(devDependencies ?? {}) },
+            dependencies: {
+              ...fwDeps.dependencies,
+              ...styleDeps.dependencies,
+              ...(dependencies ?? {}),
+            },
+            devDependencies: {
+              ...fwDeps.devDependencies,
+              ...styleDeps.devDependencies,
+              ...(devDependencies ?? {}),
+            },
             scripts,
           }),
         };
@@ -465,15 +507,26 @@ export const inferDependencies = tool({
   inputSchema: z.object({
     framework: z.string().describe('目标框架'),
     styleMethod: z.string().default('tailwind').describe('样式方案'),
-    features: z.array(z.string()).optional().default([]).describe('额外功能：router, state-management, animation, form-validation, icon-library, http-client, testing'),
+    features: z
+      .array(z.string())
+      .optional()
+      .default([])
+      .describe(
+        '额外功能：router, state-management, animation, form-validation, icon-library, http-client, testing',
+      ),
   }),
   execute: async ({ framework, styleMethod, features }) => {
-    const fwKey = framework.toLowerCase().includes('html') ? 'html+css+js' : framework.toLowerCase();
+    const fwKey = framework.toLowerCase().includes('html')
+      ? 'html+css+js'
+      : framework.toLowerCase();
     const fwDeps = FRAMEWORK_DEPENDENCIES[fwKey] ?? { dependencies: {}, devDependencies: {} };
     const styleDeps = STYLE_DEPENDENCIES[styleMethod] ?? { dependencies: {}, devDependencies: {} };
 
     const allDeps: Record<string, string> = { ...fwDeps.dependencies, ...styleDeps.dependencies };
-    const allDevDeps: Record<string, string> = { ...fwDeps.devDependencies, ...styleDeps.devDependencies };
+    const allDevDeps: Record<string, string> = {
+      ...fwDeps.devDependencies,
+      ...styleDeps.devDependencies,
+    };
 
     for (const feat of features ?? []) {
       const featureDep = FEATURE_DEPENDENCIES[feat];
@@ -501,7 +554,9 @@ export const generateScaffoldCommands = tool({
     typescript: z.boolean().default(true).describe('是否使用 TypeScript'),
   }),
   execute: async ({ framework, packageManager, projectName, typescript }) => {
-    const fwKey = framework.toLowerCase().includes('html') ? 'html+css+js' : framework.toLowerCase();
+    const fwKey = framework.toLowerCase().includes('html')
+      ? 'html+css+js'
+      : framework.toLowerCase();
     const commands: Array<{ command: string; description: string; optional: boolean }> = [];
 
     // 包管理器安装指令前缀

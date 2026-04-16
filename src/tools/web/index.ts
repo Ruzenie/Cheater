@@ -62,9 +62,8 @@ async function safeFetch(
       contentType,
     };
   } catch (error: any) {
-    const message = error.name === 'AbortError'
-      ? `请求超时 (${timeout}ms)`
-      : error.message ?? String(error);
+    const message =
+      error.name === 'AbortError' ? `请求超时 (${timeout}ms)` : (error.message ?? String(error));
 
     return {
       ok: false,
@@ -79,32 +78,35 @@ async function safeFetch(
  * 粗略地从 HTML 中提取文本内容（去掉标签、script、style）
  */
 function htmlToText(html: string): string {
-  return html
-    // 移除 script 和 style 块
-    .replace(/<script[\s\S]*?<\/script>/gi, '')
-    .replace(/<style[\s\S]*?<\/style>/gi, '')
-    // 移除 HTML 注释
-    .replace(/<!--[\s\S]*?-->/g, '')
-    // 将 br/p/div/li/h* 等块级标签替换为换行
-    .replace(/<\/?(?:br|p|div|li|h[1-6]|tr|section|article|header|footer|nav|main)[^>]*>/gi, '\n')
-    // 移除剩余标签
-    .replace(/<[^>]+>/g, '')
-    // 解码常见 HTML 实体
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/&nbsp;/g, ' ')
-    // 压缩空行
-    .replace(/\n{3,}/g, '\n\n')
-    .trim();
+  return (
+    html
+      // 移除 script 和 style 块
+      .replace(/<script[\s\S]*?<\/script>/gi, '')
+      .replace(/<style[\s\S]*?<\/style>/gi, '')
+      // 移除 HTML 注释
+      .replace(/<!--[\s\S]*?-->/g, '')
+      // 将 br/p/div/li/h* 等块级标签替换为换行
+      .replace(/<\/?(?:br|p|div|li|h[1-6]|tr|section|article|header|footer|nav|main)[^>]*>/gi, '\n')
+      // 移除剩余标签
+      .replace(/<[^>]+>/g, '')
+      // 解码常见 HTML 实体
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .replace(/&nbsp;/g, ' ')
+      // 压缩空行
+      .replace(/\n{3,}/g, '\n\n')
+      .trim()
+  );
 }
 
 // ── 工具定义 ──────────────────────────────────────
 
 export const webSearch = tool({
-  description: '通过搜索引擎查询信息，返回搜索结果摘要。可查询 npm 包、框架文档、最佳实践、API 参考等',
+  description:
+    '通过搜索引擎查询信息，返回搜索结果摘要。可查询 npm 包、框架文档、最佳实践、API 参考等',
   inputSchema: z.object({
     query: z.string().describe('搜索关键词，例如 "react modal component best practice 2024"'),
     maxResults: z.number().min(1).max(10).default(5).describe('返回的最大结果数'),
@@ -131,7 +133,10 @@ export const webSearch = tool({
     const results: Array<{ title: string; url: string; snippet: string }> = [];
 
     // 匹配 DuckDuckGo 搜索结果条目
-    const resultBlocks = result.text.match(/<a[^>]*class="result__a"[^>]*>[\s\S]*?<\/a>[\s\S]*?<a[^>]*class="result__snippet"[^>]*>[\s\S]*?<\/a>/gi) ?? [];
+    const resultBlocks =
+      result.text.match(
+        /<a[^>]*class="result__a"[^>]*>[\s\S]*?<\/a>[\s\S]*?<a[^>]*class="result__snippet"[^>]*>[\s\S]*?<\/a>/gi,
+      ) ?? [];
 
     for (const block of resultBlocks.slice(0, maxResults)) {
       const titleMatch = block.match(/<a[^>]*class="result__a"[^>]*>([\s\S]*?)<\/a>/i);
@@ -229,7 +234,9 @@ export const fetchUrl = tool({
 export const npmPackageInfo = tool({
   description: '查询 npm 包的详细信息，包括最新版本、描述、依赖、关键词等',
   inputSchema: z.object({
-    packageName: z.string().describe('npm 包名，例如 "react-router-dom" 或 "@tanstack/react-query"'),
+    packageName: z
+      .string()
+      .describe('npm 包名，例如 "react-router-dom" 或 "@tanstack/react-query"'),
   }),
   execute: async ({ packageName }) => {
     const encodedName = encodeURIComponent(packageName);
@@ -257,7 +264,8 @@ export const npmPackageInfo = tool({
         latestVersion,
         license: latestInfo.license ?? data.license ?? 'unknown',
         homepage: data.homepage ?? '',
-        repository: typeof data.repository === 'object' ? data.repository.url : data.repository ?? '',
+        repository:
+          typeof data.repository === 'object' ? data.repository.url : (data.repository ?? ''),
         keywords: (data.keywords ?? []).slice(0, 15),
         dependencies: Object.keys(latestInfo.dependencies ?? {}),
         peerDependencies: Object.keys(latestInfo.peerDependencies ?? {}),
@@ -324,7 +332,8 @@ export const fetchDocSnippet = tool({
     const snippets: string[] = [];
     const seen = new Set<number>();
 
-    for (const idx of matchingIndices.slice(0, 3)) { // 最多取 3 个匹配
+    for (const idx of matchingIndices.slice(0, 3)) {
+      // 最多取 3 个匹配
       const start = Math.max(0, idx - contextLines);
       const end = Math.min(lines.length, idx + contextLines + 1);
 

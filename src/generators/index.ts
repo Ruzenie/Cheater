@@ -4,7 +4,12 @@ import { svelteGenerator } from './svelte-generator.js';
 import { vanillaGenerator } from './vanilla-generator.js';
 import type { CodeGenerator } from './types.js';
 
-const generators: CodeGenerator[] = [reactGenerator, vanillaGenerator, vueGenerator, svelteGenerator];
+const generators: CodeGenerator[] = [
+  reactGenerator,
+  vanillaGenerator,
+  vueGenerator,
+  svelteGenerator,
+];
 
 function normalizeFramework(framework: string): string {
   const value = framework.trim().toLowerCase();
@@ -23,5 +28,8 @@ export function listCodeGenerators(): CodeGenerator[] {
 
 export function getCodeGenerator(framework: string): CodeGenerator {
   const normalized = normalizeFramework(framework);
-  return generators.find((generator) => generator.frameworkAliases.includes(normalized)) ?? reactGenerator;
+  return (
+    generators.find((generator) => generator.frameworkAliases.includes(normalized)) ??
+    reactGenerator
+  );
 }

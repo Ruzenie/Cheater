@@ -11,10 +11,7 @@
  *   cache → costTracker → outputNormalizer → [promptEnhancer] → model
  */
 
-import {
-  wrapLanguageModel,
-  type LanguageModel,
-} from 'ai';
+import { wrapLanguageModel, type LanguageModel } from 'ai';
 import type { AllProviders } from './providers.js';
 import { outputNormalizerMiddleware } from '../middleware/output-normalizer.js';
 import { promptEnhancerMiddleware } from '../middleware/prompt-enhancer.js';
@@ -26,28 +23,28 @@ import { cacheMiddleware } from '../middleware/cache.js';
 export type ModelTier = 'executor' | 'worker' | 'reasoner';
 
 export type TaskType =
-  | 'classify'             // 需求分类 / 路由判断
-  | 'component-scaffold'   // 组件骨架生成
-  | 'css-generation'       // 样式代码生成
-  | 'code-generation'      // 通用代码生成
-  | 'code-review'          // 代码审查
-  | 'design-analysis'      // 设计分析
-  | 'architecture'         // 架构决策
-  | 'quality-gate'         // 质量门禁判定
-  | 'deep-debug';          // 深度 bug 分析
+  | 'classify' // 需求分类 / 路由判断
+  | 'component-scaffold' // 组件骨架生成
+  | 'css-generation' // 样式代码生成
+  | 'code-generation' // 通用代码生成
+  | 'code-review' // 代码审查
+  | 'design-analysis' // 设计分析
+  | 'architecture' // 架构决策
+  | 'quality-gate' // 质量门禁判定
+  | 'deep-debug'; // 深度 bug 分析
 
 // ── 路由表 ────────────────────────────────────────────
 
 const ROUTING_TABLE: Record<TaskType, Record<'simple' | 'medium' | 'complex', ModelTier>> = {
-  'classify':            { simple: 'executor', medium: 'executor', complex: 'worker'   },
-  'component-scaffold':  { simple: 'executor', medium: 'executor', complex: 'worker'   },
-  'css-generation':      { simple: 'executor', medium: 'executor', complex: 'worker'   },
-  'code-generation':     { simple: 'executor', medium: 'worker',   complex: 'reasoner' },
-  'code-review':         { simple: 'worker',   medium: 'worker',   complex: 'reasoner' },
-  'design-analysis':     { simple: 'executor', medium: 'worker',   complex: 'reasoner' },
-  'architecture':        { simple: 'worker',   medium: 'reasoner', complex: 'reasoner' },
-  'quality-gate':        { simple: 'executor', medium: 'executor', complex: 'worker'   },
-  'deep-debug':          { simple: 'worker',   medium: 'reasoner', complex: 'reasoner' },
+  classify: { simple: 'executor', medium: 'executor', complex: 'worker' },
+  'component-scaffold': { simple: 'executor', medium: 'executor', complex: 'worker' },
+  'css-generation': { simple: 'executor', medium: 'executor', complex: 'worker' },
+  'code-generation': { simple: 'executor', medium: 'worker', complex: 'reasoner' },
+  'code-review': { simple: 'worker', medium: 'worker', complex: 'reasoner' },
+  'design-analysis': { simple: 'executor', medium: 'worker', complex: 'reasoner' },
+  architecture: { simple: 'worker', medium: 'reasoner', complex: 'reasoner' },
+  'quality-gate': { simple: 'executor', medium: 'executor', complex: 'worker' },
+  'deep-debug': { simple: 'worker', medium: 'reasoner', complex: 'reasoner' },
 };
 
 // ── 对外 API ──────────────────────────────────────────
@@ -96,8 +93,8 @@ export function getWrappedModel(
   }
 
   middlewareStack.push(
-    costTrackerMiddleware,       // 所有等级：追踪成本
-    outputNormalizerMiddleware,  // 所有等级：输出格式矫正
+    costTrackerMiddleware, // 所有等级：追踪成本
+    outputNormalizerMiddleware, // 所有等级：输出格式矫正
   );
 
   // 弱模型额外叠加 prompt 增强

@@ -112,12 +112,14 @@ function fixTimestamps(obj: any): any {
  * });
  * ```
  */
-export function createCacheMiddleware(options: {
-  store?: CacheStore;
-  ttlMs?: number;
-  /** 是否启用（默认：仅非生产环境启用） */
-  enabled?: boolean;
-} = {}): LanguageModelMiddleware {
+export function createCacheMiddleware(
+  options: {
+    store?: CacheStore;
+    ttlMs?: number;
+    /** 是否启用（默认：仅非生产环境启用） */
+    enabled?: boolean;
+  } = {},
+): LanguageModelMiddleware {
   const {
     store = defaultCache,
     ttlMs = 30 * 60 * 1000,

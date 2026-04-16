@@ -28,10 +28,7 @@ export const outputNormalizerMiddleware: LanguageModelMiddleware = {
   // ── transformParams: 降级 json_schema → json_object ──
   // 第三方 OpenAI-compatible 模型不支持 json_schema，但支持 json_object
   transformParams: async ({ params }) => {
-    if (
-      params.responseFormat?.type === 'json' &&
-      params.responseFormat.schema != null
-    ) {
+    if (params.responseFormat?.type === 'json' && params.responseFormat.schema != null) {
       // 某些第三方模型（如 DeepSeek）要求 prompt 中包含 "json" 关键字
       // 才能使用 json_object 模式，确保至少有一条 system message 包含提示
       const messages = [...(params.prompt ?? [])];
@@ -99,9 +96,7 @@ export const outputNormalizerMiddleware: LanguageModelMiddleware = {
     }
 
     // 返回新对象，避免突变原始 result
-    const newContent = result.content.map((p: any) =>
-      p === textPart ? { ...p, text } : p,
-    );
+    const newContent = result.content.map((p: any) => (p === textPart ? { ...p, text } : p));
     return { ...result, content: newContent };
   },
 };

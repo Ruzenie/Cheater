@@ -96,7 +96,10 @@ function runFullStaticScan(code: string) {
     details: {
       security: { issues: security, passed: !hasBlockingIssues(security) },
       a11y: { issues: a11y, passed: a11y.filter((i) => i.severity === 'critical').length === 0 },
-      performance: { issues: performance, passed: performance.filter((i) => i.severity === 'critical').length === 0 },
+      performance: {
+        issues: performance,
+        passed: performance.filter((i) => i.severity === 'critical').length === 0,
+      },
     },
   };
 }
@@ -120,8 +123,10 @@ export async function runCodeAuditor(
   console.log('   📋 Phase 1: 静态规则扫描 (零成本)...');
   const staticResult = runFullStaticScan(code);
 
-  console.log(`   ✅ 静态扫描完成 | 评分: ${staticResult.overallScore}/10 | ` +
-    `critical: ${staticResult.summary.critical} | warnings: ${staticResult.summary.warnings}`);
+  console.log(
+    `   ✅ 静态扫描完成 | 评分: ${staticResult.overallScore}/10 | ` +
+      `critical: ${staticResult.summary.critical} | warnings: ${staticResult.summary.warnings}`,
+  );
 
   // ── Phase 2 + 3: 深度分析 + 报告生成（⚡ 并行流式）──
 
@@ -195,11 +200,13 @@ ${JSON.stringify(staticResult.summary)}
     try {
       const rawAnalysis = safeParseJson(analysisText);
       const parsed = DeepAnalysisSchema.safeParse(rawAnalysis);
-      deepAnalysis = parsed.success ? parsed.data : {
-        architectureNotes: rawAnalysis.architectureNotes ?? [],
-        improvementSuggestions: rawAnalysis.improvementSuggestions ?? [],
-        riskAssessment: rawAnalysis.riskAssessment ?? analysisText.slice(0, 300),
-      };
+      deepAnalysis = parsed.success
+        ? parsed.data
+        : {
+            architectureNotes: rawAnalysis.architectureNotes ?? [],
+            improvementSuggestions: rawAnalysis.improvementSuggestions ?? [],
+            riskAssessment: rawAnalysis.riskAssessment ?? analysisText.slice(0, 300),
+          };
     } catch {
       deepAnalysis = {
         architectureNotes: [],
@@ -212,7 +219,9 @@ ${JSON.stringify(staticResult.summary)}
     try {
       const rawSummary = safeParseJson(summaryText);
       const parsed = AuditSummarySchema.safeParse(rawSummary);
-      summary = parsed.success ? parsed.data.summary : (rawSummary.summary ?? summaryText.slice(0, 200));
+      summary = parsed.success
+        ? parsed.data.summary
+        : (rawSummary.summary ?? summaryText.slice(0, 200));
     } catch {
       summary = summaryText.slice(0, 200);
     }
@@ -241,19 +250,27 @@ ${JSON.stringify(staticResult.summary)}
       experimental_telemetry: telemetryConfig('code-auditor:summary'),
     });
 
-    const summaryText = await consumeTextStream(summaryStream.textStream, { prefix: '      [summary] ', echo: false });
+    const summaryText = await consumeTextStream(summaryStream.textStream, {
+      prefix: '      [summary] ',
+      echo: false,
+    });
     try {
       const rawSummary = safeParseJson(summaryText);
       const parsed = AuditSummarySchema.safeParse(rawSummary);
-      summary = parsed.success ? parsed.data.summary : (rawSummary.summary ?? summaryText.slice(0, 200));
+      summary = parsed.success
+        ? parsed.data.summary
+        : (rawSummary.summary ?? summaryText.slice(0, 200));
     } catch {
       summary = summaryText.slice(0, 200);
     }
   }
 
-  const passed = staticResult.overallScore >= qualityThreshold && staticResult.summary.critical === 0;
+  const passed =
+    staticResult.overallScore >= qualityThreshold && staticResult.summary.critical === 0;
 
-  console.log(`\n🔍 [Audit Agent] 审计完成！评分: ${staticResult.overallScore}/10 ${passed ? '✅ 通过' : '❌ 不通过'}\n`);
+  console.log(
+    `\n🔍 [Audit Agent] 审计完成！评分: ${staticResult.overallScore}/10 ${passed ? '✅ 通过' : '❌ 不通过'}\n`,
+  );
 
   return {
     overallScore: staticResult.overallScore,

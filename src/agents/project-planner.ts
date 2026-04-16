@@ -99,11 +99,16 @@ export interface ProjectPlannerResult {
 const AiPlanningResultSchema = z.object({
   projectName: z.string().optional(),
   additionalDirectories: z.array(z.string()).optional().default([]),
-  additionalFiles: z.array(z.object({
-    filePath: z.string(),
-    role: z.string(),
-    description: z.string(),
-  })).optional().default([]),
+  additionalFiles: z
+    .array(
+      z.object({
+        filePath: z.string(),
+        role: z.string(),
+        description: z.string(),
+      }),
+    )
+    .optional()
+    .default([]),
   layoutComponents: z.array(z.string()).optional().default([]),
   features: z.array(z.string()).optional().default([]),
   notes: z.array(z.string()).optional().default([]),
@@ -113,17 +118,29 @@ const AiPlanningResultSchema = z.object({
 
 // ── 框架标准配置 ──────────────────────────────────────
 
-const FRAMEWORK_CONFIGS: Record<string, {
-  directories: string[];
-  componentBaseDir: string;
-  componentExt: string;
-  entryFiles: Array<{ path: string; role: ProjectFileEntry['role'] }>;
-  defaultScripts: Record<string, string>;
-  defaultDeps: Record<string, string>;
-  defaultDevDeps: Record<string, string>;
-}> = {
+const FRAMEWORK_CONFIGS: Record<
+  string,
+  {
+    directories: string[];
+    componentBaseDir: string;
+    componentExt: string;
+    entryFiles: Array<{ path: string; role: ProjectFileEntry['role'] }>;
+    defaultScripts: Record<string, string>;
+    defaultDeps: Record<string, string>;
+    defaultDevDeps: Record<string, string>;
+  }
+> = {
   react: {
-    directories: ['src', 'src/components', 'src/hooks', 'src/styles', 'src/types', 'src/utils', 'src/assets', 'public'],
+    directories: [
+      'src',
+      'src/components',
+      'src/hooks',
+      'src/styles',
+      'src/types',
+      'src/utils',
+      'src/assets',
+      'public',
+    ],
     componentBaseDir: 'src/components',
     componentExt: '.tsx',
     entryFiles: [
@@ -135,12 +152,26 @@ const FRAMEWORK_CONFIGS: Record<string, {
     defaultScripts: { dev: 'vite', build: 'tsc -b && vite build', preview: 'vite preview' },
     defaultDeps: { react: '^19.0.0', 'react-dom': '^19.0.0' },
     defaultDevDeps: {
-      '@types/react': '^19.0.0', '@types/react-dom': '^19.0.0',
-      '@vitejs/plugin-react': '^4.4.0', typescript: '^5.7.0', vite: '^6.0.0',
+      '@types/react': '^19.0.0',
+      '@types/react-dom': '^19.0.0',
+      '@vitejs/plugin-react': '^4.4.0',
+      typescript: '^5.7.0',
+      vite: '^6.0.0',
     },
   },
   vue: {
-    directories: ['src', 'src/components', 'src/views', 'src/composables', 'src/stores', 'src/styles', 'src/types', 'src/utils', 'src/assets', 'public'],
+    directories: [
+      'src',
+      'src/components',
+      'src/views',
+      'src/composables',
+      'src/stores',
+      'src/styles',
+      'src/types',
+      'src/utils',
+      'src/assets',
+      'public',
+    ],
     componentBaseDir: 'src/components',
     componentExt: '.vue',
     entryFiles: [
@@ -152,12 +183,24 @@ const FRAMEWORK_CONFIGS: Record<string, {
     defaultScripts: { dev: 'vite', build: 'vue-tsc -b && vite build', preview: 'vite preview' },
     defaultDeps: { vue: '^3.5.0' },
     defaultDevDeps: {
-      '@vitejs/plugin-vue': '^5.2.0', typescript: '^5.7.0',
-      'vue-tsc': '^2.2.0', vite: '^6.0.0',
+      '@vitejs/plugin-vue': '^5.2.0',
+      typescript: '^5.7.0',
+      'vue-tsc': '^2.2.0',
+      vite: '^6.0.0',
     },
   },
   svelte: {
-    directories: ['src', 'src/lib', 'src/lib/components', 'src/lib/stores', 'src/lib/utils', 'src/lib/types', 'src/routes', 'src/styles', 'static'],
+    directories: [
+      'src',
+      'src/lib',
+      'src/lib/components',
+      'src/lib/stores',
+      'src/lib/utils',
+      'src/lib/types',
+      'src/routes',
+      'src/styles',
+      'static',
+    ],
     componentBaseDir: 'src/lib/components',
     componentExt: '.svelte',
     entryFiles: [
@@ -169,8 +212,11 @@ const FRAMEWORK_CONFIGS: Record<string, {
     defaultScripts: { dev: 'vite dev', build: 'vite build', preview: 'vite preview' },
     defaultDeps: {},
     defaultDevDeps: {
-      '@sveltejs/adapter-auto': '^4.0.0', '@sveltejs/kit': '^2.15.0',
-      svelte: '^5.0.0', typescript: '^5.7.0', vite: '^6.0.0',
+      '@sveltejs/adapter-auto': '^4.0.0',
+      '@sveltejs/kit': '^2.15.0',
+      svelte: '^5.0.0',
+      typescript: '^5.7.0',
+      vite: '^6.0.0',
     },
   },
   'html+css+js': {
@@ -188,10 +234,16 @@ const FRAMEWORK_CONFIGS: Record<string, {
   },
 };
 
-const STYLE_DEPS: Record<string, { deps: Record<string, string>; devDeps: Record<string, string> }> = {
+const STYLE_DEPS: Record<
+  string,
+  { deps: Record<string, string>; devDeps: Record<string, string> }
+> = {
   tailwind: { deps: {}, devDeps: { tailwindcss: '^4.0.0', '@tailwindcss/vite': '^4.0.0' } },
   sass: { deps: {}, devDeps: { sass: '^1.80.0' } },
-  'styled-components': { deps: { 'styled-components': '^6.1.0' }, devDeps: { '@types/styled-components': '^5.1.34' } },
+  'styled-components': {
+    deps: { 'styled-components': '^6.1.0' },
+    devDeps: { '@types/styled-components': '^5.1.34' },
+  },
   css: { deps: {}, devDeps: {} },
   'css-modules': { deps: {}, devDeps: {} },
 };
@@ -219,7 +271,7 @@ function normalizeFrameworkKey(framework: string): string {
 function buildComponentMapping(
   componentNames: string[],
   fwKey: string,
-  config: typeof FRAMEWORK_CONFIGS[string],
+  config: (typeof FRAMEWORK_CONFIGS)[string],
   layoutComponents: string[],
 ): ComponentMapping[] {
   return componentNames.map((name) => {
@@ -233,9 +285,10 @@ function buildComponentMapping(
     }
 
     // 计算导入路径（从 src/ 出发的相对路径）
-    const importPath = fwKey === 'html+css+js'
-      ? `./${config.componentBaseDir}/${name}`
-      : `./${config.componentBaseDir.replace('src/', '')}/${name}`;
+    const importPath =
+      fwKey === 'html+css+js'
+        ? `./${config.componentBaseDir}/${name}`
+        : `./${config.componentBaseDir.replace('src/', '')}/${name}`;
 
     return {
       componentName: name,
@@ -429,22 +482,27 @@ ${designOutput.componentTree.map((c) => `- ${c.name}: ${c.description}`).join('\
     experimental_telemetry: telemetryConfig('project-planner:plan'),
   });
 
-  const planText = await consumeTextStream(planStream.textStream, { prefix: '      [plan] ', echo: false });
+  const planText = await consumeTextStream(planStream.textStream, {
+    prefix: '      [plan] ',
+    echo: false,
+  });
 
   let aiPlan: z.infer<typeof AiPlanningResultSchema>;
   try {
     const raw = safeParseJson(planText);
     const parsed = AiPlanningResultSchema.safeParse(raw);
-    aiPlan = parsed.success ? parsed.data : {
-      projectName: undefined,
-      additionalDirectories: [],
-      additionalFiles: [],
-      layoutComponents: [],
-      features: [],
-      notes: [planText.slice(0, 300)],
-      additionalDependencies: {},
-      additionalDevDependencies: {},
-    };
+    aiPlan = parsed.success
+      ? parsed.data
+      : {
+          projectName: undefined,
+          additionalDirectories: [],
+          additionalFiles: [],
+          layoutComponents: [],
+          features: [],
+          notes: [planText.slice(0, 300)],
+          additionalDependencies: {},
+          additionalDevDependencies: {},
+        };
   } catch {
     console.warn('   ⚠️  AI 规划解析失败，使用默认配置');
     aiPlan = {
@@ -468,11 +526,13 @@ ${designOutput.componentTree.map((c) => `- ${c.name}: ${c.description}`).join('\
     // 原生项目只需要 styles/ 和 scripts/，组件会合并到 3 个文件里
     directories = [...config.directories];
   } else {
-    directories = [...new Set([
-      ...config.directories,
-      ...aiPlan.additionalDirectories,
-      ...componentNames.map((name) => `${config.componentBaseDir}/${name}`),
-    ])];
+    directories = [
+      ...new Set([
+        ...config.directories,
+        ...aiPlan.additionalDirectories,
+        ...componentNames.map((name) => `${config.componentBaseDir}/${name}`),
+      ]),
+    ];
   }
 
   // 依赖
@@ -546,10 +606,18 @@ ${designOutput.componentTree.map((c) => `- ${c.name}: ${c.description}`).join('\
     generatedBy: 'template',
   };
 
-  const allFiles = [...configFiles, ...entryFiles, ...(fwKey !== 'html+css+js' ? [barrelFile] : []), ...componentFiles, ...additionalFiles];
+  const allFiles = [
+    ...configFiles,
+    ...entryFiles,
+    ...(fwKey !== 'html+css+js' ? [barrelFile] : []),
+    ...componentFiles,
+    ...additionalFiles,
+  ];
 
   // 包管理器命令
-  const installCmd = { npm: 'npm install', pnpm: 'pnpm install', yarn: 'yarn', bun: 'bun install' }[packageManager];
+  const installCmd = { npm: 'npm install', pnpm: 'pnpm install', yarn: 'yarn', bun: 'bun install' }[
+    packageManager
+  ];
   const devCmd = packageManager === 'npm' ? 'npm run dev' : `${packageManager} dev`;
   const buildCmd = packageManager === 'npm' ? 'npm run build' : `${packageManager} build`;
 
@@ -585,7 +653,9 @@ ${designOutput.componentTree.map((c) => `- ${c.name}: ${c.description}`).join('\
   console.log(`   📂 目录数：${directories.length}`);
   console.log(`   📄 文件数：${allFiles.length}`);
   console.log(`   🧩 组件数：${componentMapping.length}`);
-  console.log(`   📦 依赖数：${Object.keys(dependencies).length} + ${Object.keys(devDependencies).length} (dev)`);
+  console.log(
+    `   📦 依赖数：${Object.keys(dependencies).length} + ${Object.keys(devDependencies).length} (dev)`,
+  );
 
   if (aiPlan.layoutComponents.length > 0) {
     console.log(`   🏗️  布局组件：${aiPlan.layoutComponents.join(', ')}`);

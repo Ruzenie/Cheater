@@ -18,11 +18,7 @@ export async function consumeTextStream(
   textStream: AsyncIterable<string>,
   options: StreamConsumeOptions = {},
 ): Promise<string> {
-  const {
-    prefix = '',
-    echo = true,
-    writer = process.stdout,
-  } = options;
+  const { prefix = '', echo = true, writer = process.stdout } = options;
 
   let result = '';
   let hasWritten = false;

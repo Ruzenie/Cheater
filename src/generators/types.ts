@@ -18,10 +18,18 @@ export interface CodeGenerator {
   frameworkAliases: string[];
   createScaffold(spec: ComponentSpec, options: CodeGeneratorOptions): GeneratedArtifact[];
   buildFillSystem(options: CodeGeneratorOptions): string;
-  buildFillPrompt(spec: ComponentSpec, artifacts: GeneratedArtifact[], options: CodeGeneratorOptions): string;
+  buildFillPrompt(
+    spec: ComponentSpec,
+    artifacts: GeneratedArtifact[],
+    options: CodeGeneratorOptions,
+  ): string;
   supportsStylePass(options: CodeGeneratorOptions): boolean;
   buildStyleSystem(options: CodeGeneratorOptions): string;
-  buildStylePrompt(spec: ComponentSpec, artifacts: GeneratedArtifact[], options: CodeGeneratorOptions): string;
+  buildStylePrompt(
+    spec: ComponentSpec,
+    artifacts: GeneratedArtifact[],
+    options: CodeGeneratorOptions,
+  ): string;
   buildFixPrompt(
     spec: ComponentSpec,
     artifacts: GeneratedArtifact[],

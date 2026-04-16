@@ -73,11 +73,8 @@ function normalizeArtifacts(raw: any, fallbackArtifacts: GeneratedArtifact[]): G
   const normalized = fileList
     .map((file: any) => {
       const fileName = typeof file?.fileName === 'string' ? file.fileName : '';
-      const content = typeof file?.content === 'string'
-        ? file.content
-        : typeof file === 'string'
-          ? file
-          : '';
+      const content =
+        typeof file?.content === 'string' ? file.content : typeof file === 'string' ? file : '';
       const fallback = fallbackMap.get(fileName);
 
       if (!fileName || !content || !fallback) {
@@ -90,7 +87,9 @@ function normalizeArtifacts(raw: any, fallbackArtifacts: GeneratedArtifact[]): G
         role: fallback.role,
       } satisfies GeneratedArtifact;
     })
-    .filter((artifact: GeneratedArtifact | null): artifact is GeneratedArtifact => artifact !== null);
+    .filter(
+      (artifact: GeneratedArtifact | null): artifact is GeneratedArtifact => artifact !== null,
+    );
 
   return normalized.length > 0 ? normalized : fallbackArtifacts;
 }
@@ -101,11 +100,15 @@ function parseArtifacts(text: string, fallbackArtifacts: GeneratedArtifact[]): G
     const result = normalizeArtifacts(raw, fallbackArtifacts);
     // 如果 normalizeArtifacts 返回了 fallback（即解析出的内容为空），发出警告
     if (result === fallbackArtifacts) {
-      console.warn('      ⚠️  parseArtifacts: AI 输出解析为空，回退到骨架代码（可能 maxOutputTokens 不足导致 JSON 被截断）');
+      console.warn(
+        '      ⚠️  parseArtifacts: AI 输出解析为空，回退到骨架代码（可能 maxOutputTokens 不足导致 JSON 被截断）',
+      );
     }
     return result;
   } catch {
-    console.warn('      ⚠️  parseArtifacts: JSON 解析失败，回退到骨架代码（可能 maxOutputTokens 不足导致 JSON 被截断）');
+    console.warn(
+      '      ⚠️  parseArtifacts: JSON 解析失败，回退到骨架代码（可能 maxOutputTokens 不足导致 JSON 被截断）',
+    );
     return fallbackArtifacts;
   }
 }
@@ -122,45 +125,89 @@ function runSelfReview(
 
   if (generatorId === 'react') {
     if (!combined.includes('interface') && !combined.includes('type ')) {
-      issues.push({ check: 'typescript', severity: 'warning', message: 'React 生成结果缺少 Props 类型定义' });
+      issues.push({
+        check: 'typescript',
+        severity: 'warning',
+        message: 'React 生成结果缺少 Props 类型定义',
+      });
     }
     if (/:\s*any\b/.test(combined)) {
-      issues.push({ check: 'typescript', severity: 'warning', message: '存在 any 类型，应使用具体类型' });
+      issues.push({
+        check: 'typescript',
+        severity: 'warning',
+        message: '存在 any 类型，应使用具体类型',
+      });
     }
   }
 
   if (generatorId === 'vue') {
     if (!artifacts.some((artifact) => artifact.fileName.endsWith('.vue'))) {
-      issues.push({ check: 'structure', severity: 'warning', message: 'Vue 生成结果缺少 .vue 文件' });
+      issues.push({
+        check: 'structure',
+        severity: 'warning',
+        message: 'Vue 生成结果缺少 .vue 文件',
+      });
     }
     if (/import\s+React|useState\(|className=|on:click|<script>\s*export let/.test(combined)) {
-      issues.push({ check: 'framework', severity: 'critical', message: 'Vue 生成结果中混入了非 Vue 语法痕迹' });
+      issues.push({
+        check: 'framework',
+        severity: 'critical',
+        message: 'Vue 生成结果中混入了非 Vue 语法痕迹',
+      });
     }
   }
 
   if (generatorId === 'svelte') {
     if (!artifacts.some((artifact) => artifact.fileName.endsWith('.svelte'))) {
-      issues.push({ check: 'structure', severity: 'warning', message: 'Svelte 生成结果缺少 .svelte 文件' });
+      issues.push({
+        check: 'structure',
+        severity: 'warning',
+        message: 'Svelte 生成结果缺少 .svelte 文件',
+      });
     }
     if (/import\s+React|defineProps\(|className=|<template>|<script setup/.test(combined)) {
-      issues.push({ check: 'framework', severity: 'critical', message: 'Svelte 生成结果中混入了非 Svelte 语法痕迹' });
+      issues.push({
+        check: 'framework',
+        severity: 'critical',
+        message: 'Svelte 生成结果中混入了非 Svelte 语法痕迹',
+      });
     }
   }
 
   if (generatorId === 'html+css+js') {
-    if (/import\s+React|React\.|useState\(|useEffect\(|className=|<\/?[A-Z][A-Za-z0-9]*/.test(combined)) {
-      issues.push({ check: 'framework', severity: 'critical', message: '原生生成结果中混入了 React / JSX 痕迹' });
+    if (
+      /import\s+React|React\.|useState\(|useEffect\(|className=|<\/?[A-Z][A-Za-z0-9]*/.test(
+        combined,
+      )
+    ) {
+      issues.push({
+        check: 'framework',
+        severity: 'critical',
+        message: '原生生成结果中混入了 React / JSX 痕迹',
+      });
     }
     if (!artifacts.some((artifact) => artifact.fileName.endsWith('.html'))) {
-      issues.push({ check: 'structure', severity: 'warning', message: '原生生成结果缺少 HTML 文件' });
+      issues.push({
+        check: 'structure',
+        severity: 'warning',
+        message: '原生生成结果缺少 HTML 文件',
+      });
     }
   }
 
   if (combined.includes('fetch(') && !combined.includes('catch')) {
-    issues.push({ check: 'error-handling', severity: 'critical', message: 'fetch 调用缺少错误处理' });
+    issues.push({
+      check: 'error-handling',
+      severity: 'critical',
+      message: 'fetch 调用缺少错误处理',
+    });
   }
   if (combined.includes('async') && !combined.includes('try')) {
-    issues.push({ check: 'error-handling', severity: 'warning', message: '异步操作缺少 try-catch' });
+    issues.push({
+      check: 'error-handling',
+      severity: 'warning',
+      message: '异步操作缺少 try-catch',
+    });
   }
 
   const singleLetterVars = combined.match(/(?:const|let|var)\s+([a-z])\s*=/g) ?? [];
@@ -171,7 +218,11 @@ function runSelfReview(
   for (const artifact of artifacts) {
     const lines = artifact.content.split('\n').length;
     if (lines > 240) {
-      issues.push({ check: 'structure', severity: 'warning', message: `${artifact.fileName} 过长 (${lines} 行)，建议拆分` });
+      issues.push({
+        check: 'structure',
+        severity: 'warning',
+        message: `${artifact.fileName} 过长 (${lines} 行)，建议拆分`,
+      });
     }
   }
 
@@ -203,7 +254,10 @@ async function generateSingleComponent(
     maxOutputTokens: 8000,
     experimental_telemetry: telemetryConfig(`code-producer:fill:${generator.id}:${spec.name}`),
   });
-  const filledText = await consumeTextStream(fillStream.textStream, { prefix: `      [fill:${spec.name}] `, echo: false });
+  const filledText = await consumeTextStream(fillStream.textStream, {
+    prefix: `      [fill:${spec.name}] `,
+    echo: false,
+  });
   currentArtifacts = parseArtifacts(filledText, currentArtifacts);
 
   if (generator.supportsStylePass(options)) {
@@ -216,7 +270,10 @@ async function generateSingleComponent(
       maxOutputTokens: 8000,
       experimental_telemetry: telemetryConfig(`code-producer:style:${generator.id}:${spec.name}`),
     });
-    const styledText = await consumeTextStream(styleStream.textStream, { prefix: `      [style:${spec.name}] `, echo: false });
+    const styledText = await consumeTextStream(styleStream.textStream, {
+      prefix: `      [style:${spec.name}] `,
+      echo: false,
+    });
     currentArtifacts = parseArtifacts(styledText, currentArtifacts);
   }
 
@@ -234,7 +291,10 @@ async function generateSingleComponent(
       maxOutputTokens: 8000,
       experimental_telemetry: telemetryConfig(`code-producer:fix:${generator.id}:${spec.name}`),
     });
-    const fixedText = await consumeTextStream(fixStream.textStream, { prefix: `      [fix:${spec.name}] `, echo: false });
+    const fixedText = await consumeTextStream(fixStream.textStream, {
+      prefix: `      [fix:${spec.name}] `,
+      echo: false,
+    });
     currentArtifacts = parseArtifacts(fixedText, currentArtifacts);
   }
 
@@ -272,7 +332,9 @@ export async function runCodeProducer(
   if (specs.length <= concurrency) {
     console.log(`   ⚡ 并行生成 ${specs.length} 个组件...`);
     components = await Promise.all(
-      specs.map((spec) => generateSingleComponent(spec, providers, { framework, styleMethod, darkMode })),
+      specs.map((spec) =>
+        generateSingleComponent(spec, providers, { framework, styleMethod, darkMode }),
+      ),
     );
   } else {
     components = [];
@@ -280,7 +342,9 @@ export async function runCodeProducer(
       const batch = specs.slice(i, i + concurrency);
       console.log(`   ⚡ 并行生成第 ${i + 1}-${Math.min(i + concurrency, specs.length)} 个组件...`);
       const batchResults = await Promise.all(
-        batch.map((spec) => generateSingleComponent(spec, providers, { framework, styleMethod, darkMode })),
+        batch.map((spec) =>
+          generateSingleComponent(spec, providers, { framework, styleMethod, darkMode }),
+        ),
       );
       components.push(...batchResults);
     }
@@ -289,11 +353,15 @@ export async function runCodeProducer(
   for (const comp of components) {
     const tiers = [...new Set(comp.modelTiersUsed)].join(', ');
     const files = comp.artifacts.map((artifact) => artifact.fileName).join(', ');
-    console.log(`   ✅ ${comp.componentName} 完成 (${comp.generatorId} | ${files} | used: ${tiers})`);
+    console.log(
+      `   ✅ ${comp.componentName} 完成 (${comp.generatorId} | ${files} | used: ${tiers})`,
+    );
   }
 
   const allPassed = components.every((component) => component.selfReviewResult.passed);
-  console.log(`\n🔧 [Code Agent] 完成！${components.length} 个组件，全部通过自检：${allPassed ? '✅' : '❌'}\n`);
+  console.log(
+    `\n🔧 [Code Agent] 完成！${components.length} 个组件，全部通过自检：${allPassed ? '✅' : '❌'}\n`,
+  );
 
   return {
     components,

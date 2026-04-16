@@ -54,9 +54,10 @@ const RULES: A11yRule[] = [
     message: '表单缺少 aria-required 或 required 属性',
     check: (code) => {
       const inputs = code.match(/<input\b[^>]*>/gi) ?? [];
-      return inputs.filter(
-        (tag) => !/\brequired\b/i.test(tag) && !/\baria-required/i.test(tag),
-      ).length > 3 ? 1 : 0; // 超过3个无required的input才报
+      return inputs.filter((tag) => !/\brequired\b/i.test(tag) && !/\baria-required/i.test(tag))
+        .length > 3
+        ? 1
+        : 0; // 超过3个无required的input才报
     },
   },
 
@@ -69,9 +70,7 @@ const RULES: A11yRule[] = [
       // 检测 <button></button> 或 <button /> 空按钮
       const emptyBtns = code.match(/<button[^>]*\/\s*>/gi) ?? [];
       const emptyBtns2 = code.match(/<button[^>]*>\s*<\/button>/gi) ?? [];
-      return [...emptyBtns, ...emptyBtns2].filter(
-        (tag) => !/\baria-label\s*=/i.test(tag),
-      ).length;
+      return [...emptyBtns, ...emptyBtns2].filter((tag) => !/\baria-label\s*=/i.test(tag)).length;
     },
   },
 

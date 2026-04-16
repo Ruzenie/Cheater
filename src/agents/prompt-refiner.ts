@@ -28,10 +28,12 @@ const RefinedRequirementSchema = z.object({
   refined: z.string().describe('精炼后的核心需求描述'),
   entities: z.array(EntitySchema).describe('提取出的关键实体').optional().default([]),
   constraints: z.array(z.string()).describe('检测到的隐含约束').optional().default([]),
-  suggestedStack: z.object({
-    framework: z.string().optional(),
-    styling: z.string().optional(),
-  }).optional(),
+  suggestedStack: z
+    .object({
+      framework: z.string().optional(),
+      styling: z.string().optional(),
+    })
+    .optional(),
 });
 
 export interface RefinedRequirement {
@@ -118,9 +120,7 @@ export async function runPromptRefiner(
     // JSON 解析失败，用模型的纯文本输出作为 refined
     console.warn('   ⚠️  精炼结果解析失败，使用原始需求');
     parsed = {
-      refined: resultText.length > 0 && resultText.length < 2000
-        ? resultText
-        : requirement,
+      refined: resultText.length > 0 && resultText.length < 2000 ? resultText : requirement,
       entities: [],
       constraints: [],
       original: requirement,
@@ -128,7 +128,9 @@ export async function runPromptRefiner(
   }
 
   console.log(`   ✅ 精炼完成`);
-  console.log(`   📝 精炼：${parsed.refined.slice(0, 80)}${parsed.refined.length > 80 ? '...' : ''}`);
+  console.log(
+    `   📝 精炼：${parsed.refined.slice(0, 80)}${parsed.refined.length > 80 ? '...' : ''}`,
+  );
 
   if (parsed.entities.length > 0) {
     console.log(`   🏷️  实体：${parsed.entities.map((e) => `[${e.type}] ${e.value}`).join('、')}`);

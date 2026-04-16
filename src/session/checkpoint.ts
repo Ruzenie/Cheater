@@ -23,12 +23,12 @@ import type { TaskClassification } from '../config/task-taxonomy.js';
 // ── Pipeline Step 枚举 ──
 
 export type PipelineStep =
-  | 'refine'        // Step 0
-  | 'classify'      // Step 1 (零成本，但保存 classification 结果)
-  | 'design'        // Step 2
-  | 'plan+code'     // Step 3+4 (fork-join)
-  | 'audit'         // Step 5
-  | 'assemble';     // Step 6
+  | 'refine' // Step 0
+  | 'classify' // Step 1 (零成本，但保存 classification 结果)
+  | 'design' // Step 2
+  | 'plan+code' // Step 3+4 (fork-join)
+  | 'audit' // Step 5
+  | 'assemble'; // Step 6
 
 /** Step 的有序列表，用于判断恢复位置 */
 export const PIPELINE_STEPS: PipelineStep[] = [
@@ -191,7 +191,11 @@ export function findResumableCheckpoint(
       const content = fs.readFileSync(filePath, 'utf-8');
       const data = JSON.parse(content) as PipelineCheckpoint;
 
-      if (data.version === 1 && data.requirement.trim() === requirement.trim() && data.lastCompletedStep !== 'assemble') {
+      if (
+        data.version === 1 &&
+        data.requirement.trim() === requirement.trim() &&
+        data.lastCompletedStep !== 'assemble'
+      ) {
         candidates.push({ checkpoint: data, mtime: stat.mtimeMs });
       }
     } catch {

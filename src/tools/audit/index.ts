@@ -41,7 +41,8 @@ export const securityScanTool = tool({
  * 无障碍检查工具 — 基于规则引擎，零 LLM 成本
  */
 export const a11yScanTool = tool({
-  description: '检查代码的无障碍合规性（WCAG 2.1），检测图片 alt、表单标签、语义化等（零 LLM 成本）',
+  description:
+    '检查代码的无障碍合规性（WCAG 2.1），检测图片 alt、表单标签、语义化等（零 LLM 成本）',
   inputSchema: z.object({
     code: z.string().describe('待检查的代码'),
     wcagLevel: z.enum(['A', 'AA', 'AAA']).default('AA'),
@@ -122,7 +123,10 @@ export const fullAuditTool = tool({
       details: {
         security: { issues: security, passed: !hasBlockingIssues(security) },
         a11y: { issues: a11y, passed: a11y.filter((i) => i.severity === 'critical').length === 0 },
-        performance: { issues: performance, passed: performance.filter((i) => i.severity === 'critical').length === 0 },
+        performance: {
+          issues: performance,
+          passed: performance.filter((i) => i.severity === 'critical').length === 0,
+        },
       },
       scannedAt: new Date().toISOString(),
     };

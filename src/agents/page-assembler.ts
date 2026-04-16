@@ -73,21 +73,36 @@ function parseAssets(text: string, fallbackAssets: AssembledAsset[]): AssembledA
   }
 }
 
-function buildFallbackAssets(requirement: string, components: CodeOutput[], pageTitle: string): AssembledAsset[] {
-  const bodySections = components.map((component) => {
-    const htmlArtifacts = component.artifacts.filter((artifact) => artifact.fileName.endsWith('.html'));
-    return htmlArtifacts
-      .map((artifact) => `<section data-section="${component.componentName}">\n${artifact.content}\n</section>`)
-      .join('\n');
-  }).join('\n\n');
+function buildFallbackAssets(
+  requirement: string,
+  components: CodeOutput[],
+  pageTitle: string,
+): AssembledAsset[] {
+  const bodySections = components
+    .map((component) => {
+      const htmlArtifacts = component.artifacts.filter((artifact) =>
+        artifact.fileName.endsWith('.html'),
+      );
+      return htmlArtifacts
+        .map(
+          (artifact) =>
+            `<section data-section="${component.componentName}">\n${artifact.content}\n</section>`,
+        )
+        .join('\n');
+    })
+    .join('\n\n');
 
   const cssContent = components
-    .flatMap((component) => component.artifacts.filter((artifact) => artifact.fileName.endsWith('.css')))
+    .flatMap((component) =>
+      component.artifacts.filter((artifact) => artifact.fileName.endsWith('.css')),
+    )
     .map((artifact) => artifact.content)
     .join('\n\n');
 
   const jsContent = components
-    .flatMap((component) => component.artifacts.filter((artifact) => artifact.fileName.endsWith('.js')))
+    .flatMap((component) =>
+      component.artifacts.filter((artifact) => artifact.fileName.endsWith('.js')),
+    )
     .map((artifact) => artifact.content)
     .join('\n\n');
 
@@ -220,7 +235,11 @@ export async function assemblePageIncrementally(
     const componentText = component.artifacts
       .map((artifact) => `## FILE: ${artifact.fileName}\n${artifact.content}`)
       .join('\n\n');
-    const fallbackAssets = buildFallbackAssets(requirement, components.slice(0, components.indexOf(component) + 1), pageTitle);
+    const fallbackAssets = buildFallbackAssets(
+      requirement,
+      components.slice(0, components.indexOf(component) + 1),
+      pageTitle,
+    );
 
     const stream = streamText({
       model: getWrappedModel('reasoner', providers),
@@ -250,10 +269,14 @@ ${componentText}
 请把新组件拼接进现有页面骨架，并返回更新后的 3 个完整文件。`,
       temperature: 0.2,
       maxOutputTokens: 12000,
-      experimental_telemetry: telemetryConfig(`page-assembler:append:${framework}:${component.componentName}`),
+      experimental_telemetry: telemetryConfig(
+        `page-assembler:append:${framework}:${component.componentName}`,
+      ),
     });
 
-    const text = await consumeTextStream(stream.textStream, { prefix: `      [page-append:${component.componentName}] ` });
+    const text = await consumeTextStream(stream.textStream, {
+      prefix: `      [page-append:${component.componentName}] `,
+    });
     const nextAssets = parseAssets(text, fallbackAssets);
     assembly = {
       assets: nextAssets,
@@ -309,10 +332,14 @@ ${componentText}
 请把新组件拼接进现有页面骨架，并返回更新后的 3 个完整文件。`,
     temperature: 0.2,
     maxOutputTokens: 12000,
-    experimental_telemetry: telemetryConfig(`page-assembler:append:${framework}:${component.componentName}`),
+    experimental_telemetry: telemetryConfig(
+      `page-assembler:append:${framework}:${component.componentName}`,
+    ),
   });
 
-  const text = await consumeTextStream(stream.textStream, { prefix: `      [page-append:${component.componentName}] ` });
+  const text = await consumeTextStream(stream.textStream, {
+    prefix: `      [page-append:${component.componentName}] `,
+  });
   const nextAssets = parseAssets(text, fallbackAssets);
 
   return {

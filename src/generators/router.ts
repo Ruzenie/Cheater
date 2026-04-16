@@ -24,19 +24,8 @@ function inferFrameworkFromText(text: string): {
 } {
   const normalized = text.toLowerCase();
 
-  const vuePatterns = [
-    /\bvue\b/,
-    /vue3/,
-    /<template>/,
-    /<script\s+setup>/,
-    /composition\s*api/,
-  ];
-  const sveltePatterns = [
-    /\bsvelte\b/,
-    /sveltekit/,
-    /\$:/,
-    /on:click/,
-  ];
+  const vuePatterns = [/\bvue\b/, /vue3/, /<template>/, /<script\s+setup>/, /composition\s*api/];
+  const sveltePatterns = [/\bsvelte\b/, /sveltekit/, /\$:/, /on:click/];
 
   const vanillaPatterns = [
     /\bhtml\b/,
@@ -49,14 +38,7 @@ function inferFrameworkFromText(text: string): {
     /不用\s*react/,
     /非\s*react/,
   ];
-  const reactPatterns = [
-    /\breact\b/,
-    /\bjsx\b/,
-    /\btsx\b/,
-    /\bhooks?\b/,
-    /usestate/,
-    /useeffect/,
-  ];
+  const reactPatterns = [/\breact\b/, /\bjsx\b/, /\btsx\b/, /\bhooks?\b/, /usestate/, /useeffect/];
 
   const vueScore = countMatches(normalized, vuePatterns);
   const svelteScore = countMatches(normalized, sveltePatterns);
@@ -130,7 +112,8 @@ export function resolveFrameworkFromUserInput(
       source: 'user-input',
       reason: directInference.reason ?? '根据用户原始输入推断',
       overriddenExplicit: Boolean(
-        explicitFramework && getCodeGenerator(explicitFramework).id !== getCodeGenerator(directInference.framework).id,
+        explicitFramework &&
+        getCodeGenerator(explicitFramework).id !== getCodeGenerator(directInference.framework).id,
       ),
     };
   }
@@ -144,20 +127,25 @@ export function resolveFrameworkFromUserInput(
         source: 'user-input',
         reason: `根据精炼需求推断：${refinedInference.reason ?? '命中文本特征'}`,
         overriddenExplicit: Boolean(
-          explicitFramework && getCodeGenerator(explicitFramework).id !== getCodeGenerator(refinedInference.framework).id,
+          explicitFramework &&
+          getCodeGenerator(explicitFramework).id !==
+            getCodeGenerator(refinedInference.framework).id,
         ),
       };
     }
   }
 
-  const suggestedFramework = normalizeSuggestedFramework(input.refinedRequirement?.suggestedStack?.framework);
+  const suggestedFramework = normalizeSuggestedFramework(
+    input.refinedRequirement?.suggestedStack?.framework,
+  );
   if (suggestedFramework) {
     return {
       framework: suggestedFramework,
       source: 'refined-stack',
       reason: `Prompt Refiner 建议使用 ${suggestedFramework}`,
       overriddenExplicit: Boolean(
-        explicitFramework && getCodeGenerator(explicitFramework).id !== getCodeGenerator(suggestedFramework).id,
+        explicitFramework &&
+        getCodeGenerator(explicitFramework).id !== getCodeGenerator(suggestedFramework).id,
       ),
     };
   }

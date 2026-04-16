@@ -79,7 +79,9 @@ const RULES: PerfRule[] = [
     check: (code) => {
       // for/while 循环中包含 DOM 操作
       const hasLoopDOM =
-        /(?:for|while)\s*\([^)]*\)\s*\{[^}]*(?:getElementById|querySelector|style\.\w+\s*=)/s.test(code);
+        /(?:for|while)\s*\([^)]*\)\s*\{[^}]*(?:getElementById|querySelector|style\.\w+\s*=)/s.test(
+          code,
+        );
       return hasLoopDOM ? 1 : 0;
     },
   },

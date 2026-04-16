@@ -1,5 +1,5 @@
 {
-  "name": "frontend-agent",
+  "name": "cheater",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -13,7 +13,14 @@
     "demo:audit": "tsx demo/03-code-audit.ts",
     "demo:full": "NODE_OPTIONS='--max-old-space-size=4096' tsx demo/04-full-pipeline.ts",
     "demo:plan": "tsx demo/05-project-plan.ts",
-    "demo:assemble": "tsx demo/06-assemble.ts"
+    "demo:assemble": "tsx demo/06-assemble.ts",
+    "lint": "eslint src/ demo/",
+    "lint:fix": "eslint src/ demo/ --fix",
+    "format": "prettier --write \"src/**/*.ts\" \"demo/**/*.ts\"",
+    "format:check": "prettier --check \"src/**/*.ts\" \"demo/**/*.ts\"",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "@ai-sdk/openai": "^3.0.52",
@@ -22,9 +29,17 @@
     "zod": "^3.24.2"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/node": "^22.0.0",
+    "eslint": "^10.2.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.5",
+    "globals": "^17.5.0",
+    "prettier": "^3.8.3",
     "ts-node": "^10.9.2",
     "tsx": "^4.21.0",
-    "typescript": "^5.7.0"
+    "typescript": "^5.7.0",
+    "typescript-eslint": "^8.58.2",
+    "vitest": "^3.2.4"
   }
 }

@@ -31,10 +31,10 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
 `;
 }
 
-function generateReactApp(components: Array<{ name: string; importPath: string; isLayout: boolean }>): string {
-  const imports = components
-    .map((c) => `import ${c.name} from '${c.importPath}';`)
-    .join('\n');
+function generateReactApp(
+  components: Array<{ name: string; importPath: string; isLayout: boolean }>,
+): string {
+  const imports = components.map((c) => `import ${c.name} from '${c.importPath}';`).join('\n');
 
   const layoutComponents = components.filter((c) => c.isLayout);
   const contentComponents = components.filter((c) => !c.isLayout);
@@ -82,13 +82,19 @@ createApp(App).mount('#app');
 `;
 }
 
-function generateVueApp(components: Array<{ name: string; importPath: string; isLayout: boolean }>): string {
-  const imports = components
-    .map((c) => `import ${c.name} from '${c.importPath}';`)
-    .join('\n');
+function generateVueApp(
+  components: Array<{ name: string; importPath: string; isLayout: boolean }>,
+): string {
+  const imports = components.map((c) => `import ${c.name} from '${c.importPath}';`).join('\n');
 
-  const layoutTags = components.filter((c) => c.isLayout).map((c) => `    <${c.name} />`).join('\n');
-  const contentTags = components.filter((c) => !c.isLayout).map((c) => `      <${c.name} />`).join('\n');
+  const layoutTags = components
+    .filter((c) => c.isLayout)
+    .map((c) => `    <${c.name} />`)
+    .join('\n');
+  const contentTags = components
+    .filter((c) => !c.isLayout)
+    .map((c) => `      <${c.name} />`)
+    .join('\n');
 
   return `<script setup lang="ts">
 ${imports}
@@ -137,7 +143,9 @@ function generateVanillaHtml(
   components: Array<{ name: string; importPath: string; isLayout: boolean }>,
 ): string {
   const sections = components
-    .map((c) => `    <section data-component="${c.name}">\n      <!-- ${c.name} -->\n    </section>`)
+    .map(
+      (c) => `    <section data-component="${c.name}">\n      <!-- ${c.name} -->\n    </section>`,
+    )
     .join('\n\n');
 
   return `<!DOCTYPE html>
@@ -181,13 +189,17 @@ body {
   background-color: #ffffff;
 }
 
-${darkMode ? `@media (prefers-color-scheme: dark) {
+${
+  darkMode
+    ? `@media (prefers-color-scheme: dark) {
   body {
     color: #f0f0f0;
     background-color: #1a1a1a;
   }
 }
-` : ''}
+`
+    : ''
+}
 img,
 picture,
 video,
@@ -212,11 +224,15 @@ export const placeComponent = tool({
   description: '将生成的组件代码放置到项目结构中的指定路径，返回目标文件路径和内容的映射',
   inputSchema: z.object({
     componentName: z.string().describe('组件名（PascalCase）'),
-    artifacts: z.array(z.object({
-      fileName: z.string(),
-      content: z.string(),
-      role: z.string().describe('文件角色：component, style, script, markup'),
-    })).describe('Code Producer 生成的文件列表'),
+    artifacts: z
+      .array(
+        z.object({
+          fileName: z.string(),
+          content: z.string(),
+          role: z.string().describe('文件角色：component, style, script, markup'),
+        }),
+      )
+      .describe('Code Producer 生成的文件列表'),
     targetDir: z.string().describe('目标目录路径（相对项目根），如 src/components/LoginForm'),
     createIndex: z.boolean().default(true).describe('是否为组件目录生成 index.ts re-export'),
     framework: z.string().default('react').describe('目标框架'),
@@ -255,17 +271,23 @@ export const generateEntryFiles = tool({
   description: '生成框架标准入口文件（main.tsx, App.tsx, index.html 等），返回文件路径和内容',
   inputSchema: z.object({
     framework: z.string().describe('目标框架'),
-    components: z.array(z.object({
-      name: z.string().describe('组件名'),
-      importPath: z.string().describe('导入路径（相对于 src/），如 ./components/NavBar'),
-      isLayout: z.boolean().default(false).describe('是否是布局组件（如 NavBar, Footer）'),
-    })).describe('需要在入口文件中导入的组件列表'),
+    components: z
+      .array(
+        z.object({
+          name: z.string().describe('组件名'),
+          importPath: z.string().describe('导入路径（相对于 src/），如 ./components/NavBar'),
+          isLayout: z.boolean().default(false).describe('是否是布局组件（如 NavBar, Footer）'),
+        }),
+      )
+      .describe('需要在入口文件中导入的组件列表'),
     styleMethod: z.string().default('tailwind').describe('样式方案'),
     pageTitle: z.string().default('My App').describe('页面标题'),
     darkMode: z.boolean().default(false).describe('是否支持暗色模式'),
   }),
   execute: async ({ framework, components, pageTitle, darkMode }) => {
-    const fwKey = framework.toLowerCase().includes('html') ? 'html+css+js' : framework.toLowerCase();
+    const fwKey = framework.toLowerCase().includes('html')
+      ? 'html+css+js'
+      : framework.toLowerCase();
     const files: Array<{ filePath: string; content: string; role: string }> = [];
 
     if (fwKey === 'react') {
@@ -273,19 +295,31 @@ export const generateEntryFiles = tool({
         { filePath: 'src/main.tsx', content: generateReactMain(), role: 'entry' },
         { filePath: 'src/App.tsx', content: generateReactApp(components), role: 'entry' },
         { filePath: 'index.html', content: generateReactIndexHtml(pageTitle), role: 'entry' },
-        { filePath: 'src/styles/globals.css', content: generateGlobalsCss(darkMode), role: 'style' },
+        {
+          filePath: 'src/styles/globals.css',
+          content: generateGlobalsCss(darkMode),
+          role: 'style',
+        },
       );
     } else if (fwKey === 'vue') {
       files.push(
         { filePath: 'src/main.ts', content: generateVueMain(), role: 'entry' },
         { filePath: 'src/App.vue', content: generateVueApp(components), role: 'entry' },
         { filePath: 'index.html', content: generateVueIndexHtml(pageTitle), role: 'entry' },
-        { filePath: 'src/styles/globals.css', content: generateGlobalsCss(darkMode), role: 'style' },
+        {
+          filePath: 'src/styles/globals.css',
+          content: generateGlobalsCss(darkMode),
+          role: 'style',
+        },
       );
     } else {
       // html+css+js / svelte — 简化处理
       files.push(
-        { filePath: 'index.html', content: generateVanillaHtml(pageTitle, components), role: 'entry' },
+        {
+          filePath: 'index.html',
+          content: generateVanillaHtml(pageTitle, components),
+          role: 'entry',
+        },
         { filePath: 'styles/main.css', content: generateGlobalsCss(darkMode), role: 'style' },
         { filePath: 'scripts/main.js', content: '// Application entry\n', role: 'script' },
       );
@@ -303,11 +337,15 @@ export const generateEntryFiles = tool({
 export const generateBarrelExports = tool({
   description: '为组件目录生成 index.ts barrel re-export 文件，方便统一导入',
   inputSchema: z.object({
-    components: z.array(z.object({
-      name: z.string().describe('组件名'),
-      dirName: z.string().describe('组件目录名（通常与组件名相同）'),
-      isDefault: z.boolean().default(true).describe('是否是默认导出'),
-    })).describe('需要包含在 barrel 文件中的组件'),
+    components: z
+      .array(
+        z.object({
+          name: z.string().describe('组件名'),
+          dirName: z.string().describe('组件目录名（通常与组件名相同）'),
+          isDefault: z.boolean().default(true).describe('是否是默认导出'),
+        }),
+      )
+      .describe('需要包含在 barrel 文件中的组件'),
     outputPath: z.string().default('src/components/index.ts').describe('barrel 文件输出路径'),
   }),
   execute: async ({ components, outputPath }) => {
@@ -360,9 +398,7 @@ export const fixImportPaths = tool({
     return {
       code: result,
       fixCount,
-      instruction: fixCount > 0
-        ? `修正了 ${fixCount} 个导入路径`
-        : '无需修正导入路径',
+      instruction: fixCount > 0 ? `修正了 ${fixCount} 个导入路径` : '无需修正导入路径',
     };
   },
 });
@@ -370,19 +406,24 @@ export const fixImportPaths = tool({
 export const mergeStyles = tool({
   description: '将多个组件的样式合并，支持单文件合并或保持按组件分离',
   inputSchema: z.object({
-    styles: z.array(z.object({
-      componentName: z.string(),
-      content: z.string(),
-      fileName: z.string(),
-    })).describe('各组件的样式文件'),
-    outputStrategy: z.enum(['single-file', 'per-component']).default('per-component').describe('合并策略'),
+    styles: z
+      .array(
+        z.object({
+          componentName: z.string(),
+          content: z.string(),
+          fileName: z.string(),
+        }),
+      )
+      .describe('各组件的样式文件'),
+    outputStrategy: z
+      .enum(['single-file', 'per-component'])
+      .default('per-component')
+      .describe('合并策略'),
     outputPath: z.string().optional().describe('single-file 模式下的输出路径'),
   }),
   execute: async ({ styles, outputStrategy, outputPath }) => {
     if (outputStrategy === 'single-file') {
-      const merged = styles
-        .map((s) => `/* ── ${s.componentName} ── */\n${s.content}`)
-        .join('\n\n');
+      const merged = styles.map((s) => `/* ── ${s.componentName} ── */\n${s.content}`).join('\n\n');
       return {
         files: [{ filePath: outputPath ?? 'styles/components.css', content: merged }],
         strategy: 'single-file',
@@ -403,10 +444,14 @@ export const writeProjectToDisk = tool({
   description: '将组装好的完整项目文件写入磁盘目录，自动创建所需的目录结构',
   inputSchema: z.object({
     outputDir: z.string().describe('输出目录的绝对路径'),
-    files: z.array(z.object({
-      filePath: z.string().describe('相对项目根的路径'),
-      content: z.string().describe('文件内容'),
-    })).describe('所有需要写入的文件'),
+    files: z
+      .array(
+        z.object({
+          filePath: z.string().describe('相对项目根的路径'),
+          content: z.string().describe('文件内容'),
+        }),
+      )
+      .describe('所有需要写入的文件'),
     clean: z.boolean().default(true).describe('写入前是否清空目标目录'),
     directories: z.array(z.string()).optional().default([]).describe('需要预先创建的空目录列表'),
   }),

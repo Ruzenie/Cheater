@@ -24,7 +24,7 @@
  * └──────────────────────┴──────────────────────────────────┘
  */
 
-import type { ModelTier } from '../config/models.js';
+import type { ModelTier } from './models.js';
 
 // ══════════════════════════════════════════════════════
 //  类型定义
@@ -35,20 +35,20 @@ export type TaskLayer = 'view' | 'logic';
 
 /** 内置交互层子类（基础类） */
 export type BuiltinViewCategory =
-  | 'native-dom'           // 原生 HTML/DOM 结构
-  | 'native-css'           // 原生 CSS 调优 / 自定义覆盖
-  | 'native-js'            // 原生 JS 交互 / 动画
-  | 'framework-custom'     // 框架 + 自定义样式
-  | 'framework-lib'        // 框架 + 组件库（Ant Design / Element 等）
+  | 'native-dom' // 原生 HTML/DOM 结构
+  | 'native-css' // 原生 CSS 调优 / 自定义覆盖
+  | 'native-js' // 原生 JS 交互 / 动画
+  | 'framework-custom' // 框架 + 自定义样式
+  | 'framework-lib' // 框架 + 组件库（Ant Design / Element 等）
   | 'framework-lib-custom'; // 框架 + 组件库 + 自定义样式
 
 /** 内置逻辑层子类 */
 export type BuiltinLogicCategory =
-  | 'api-communication'    // 前后端通信（REST/GraphQL/WS）
-  | 'data-processing'      // 大数据处理 / 虚拟滚动 / 分页
-  | 'performance'          // 性能调优 / 重绘 / 内存
-  | 'state-management'     // 复杂状态管理
-  | 'algorithm';           // 前端算法
+  | 'api-communication' // 前后端通信（REST/GraphQL/WS）
+  | 'data-processing' // 大数据处理 / 虚拟滚动 / 分页
+  | 'performance' // 性能调优 / 重绘 / 内存
+  | 'state-management' // 复杂状态管理
+  | 'algorithm'; // 前端算法
 
 /**
  * ViewCategory / LogicCategory 使用 string 类型，
@@ -75,10 +75,13 @@ export interface TaskClassification {
 //  路由条目类型
 // ══════════════════════════════════════════════════════
 
-export type RoutingEntry = Record<'simple' | 'medium' | 'complex', {
-  tier: ModelTier;
-  estimatedTokens: number;
-}>;
+export type RoutingEntry = Record<
+  'simple' | 'medium' | 'complex',
+  {
+    tier: ModelTier;
+    estimatedTokens: number;
+  }
+>;
 
 // ══════════════════════════════════════════════════════
 //  分类注册表
@@ -126,9 +129,7 @@ const categoryRegistry = new Map<string, CategoryRegistration>();
  * });
  * ```
  */
-export function registerViewCategory(
-  reg: Omit<CategoryRegistration, 'layer'>,
-): void {
+export function registerViewCategory(reg: Omit<CategoryRegistration, 'layer'>): void {
   categoryRegistry.set(reg.id, { ...reg, layer: 'view' });
 }
 
@@ -150,9 +151,7 @@ export function registerViewCategory(
  * });
  * ```
  */
-export function registerLogicCategory(
-  reg: Omit<CategoryRegistration, 'layer'>,
-): void {
+export function registerLogicCategory(reg: Omit<CategoryRegistration, 'layer'>): void {
   categoryRegistry.set(reg.id, { ...reg, layer: 'logic' });
 }
 
@@ -183,7 +182,9 @@ export function getCategoriesByLayer(layer: TaskLayer): readonly CategoryRegistr
 export function extendCategoryKeywords(id: string, newKeywords: string[]): void {
   const reg = categoryRegistry.get(id);
   if (!reg) {
-    throw new Error(`Category "${id}" is not registered. Call registerViewCategory/registerLogicCategory first.`);
+    throw new Error(
+      `Category "${id}" is not registered. Call registerViewCategory/registerLogicCategory first.`,
+    );
   }
   const existing = new Set(reg.keywords);
   for (const kw of newKeywords) {
@@ -214,14 +215,25 @@ function registerDefaults(): void {
     id: 'native-dom',
     displayName: '原生 DOM',
     keywords: [
-      'dom', 'html', '语义化', 'semantic', '标签', 'tag', 'element', 'node',
-      'queryselector', 'getelementby', 'createelement', '节点', 'fragment',
+      'dom',
+      'html',
+      '语义化',
+      'semantic',
+      '标签',
+      'tag',
+      'element',
+      'node',
+      'queryselector',
+      'getelementby',
+      'createelement',
+      '节点',
+      'fragment',
     ],
     weight: 1,
     routing: {
-      simple:  { tier: 'executor', estimatedTokens: 2000 },
-      medium:  { tier: 'executor', estimatedTokens: 4000 },
-      complex: { tier: 'worker',   estimatedTokens: 8000 },
+      simple: { tier: 'executor', estimatedTokens: 2000 },
+      medium: { tier: 'executor', estimatedTokens: 4000 },
+      complex: { tier: 'worker', estimatedTokens: 8000 },
     },
   });
 
@@ -229,16 +241,36 @@ function registerDefaults(): void {
     id: 'native-css',
     displayName: '原生 CSS',
     keywords: [
-      'css', 'scss', 'sass', 'less', 'stylesheet', '样式', '布局', 'layout',
-      'flexbox', 'grid', 'position', 'media query', '响应式', 'responsive',
-      'animation', '@keyframes', 'transition', 'transform', '伪元素', '选择器',
-      'z-index', 'overflow', 'custom property', 'css variable',
+      'css',
+      'scss',
+      'sass',
+      'less',
+      'stylesheet',
+      '样式',
+      '布局',
+      'layout',
+      'flexbox',
+      'grid',
+      'position',
+      'media query',
+      '响应式',
+      'responsive',
+      'animation',
+      '@keyframes',
+      'transition',
+      'transform',
+      '伪元素',
+      '选择器',
+      'z-index',
+      'overflow',
+      'custom property',
+      'css variable',
     ],
     weight: 1,
     routing: {
-      simple:  { tier: 'executor', estimatedTokens: 1500 },
-      medium:  { tier: 'executor', estimatedTokens: 3000 },
-      complex: { tier: 'worker',   estimatedTokens: 6000 },
+      simple: { tier: 'executor', estimatedTokens: 1500 },
+      medium: { tier: 'executor', estimatedTokens: 3000 },
+      complex: { tier: 'worker', estimatedTokens: 6000 },
     },
   });
 
@@ -246,15 +278,26 @@ function registerDefaults(): void {
     id: 'native-js',
     displayName: '原生 JS 交互',
     keywords: [
-      'vanilla', '原生', 'addeventlistener', 'classlist', 'dataset',
-      'intersectionobserver', 'mutationobserver', 'requestanimationframe',
-      'scroll', 'resize', 'drag', 'touch', 'pointer', 'gesture',
+      'vanilla',
+      '原生',
+      'addeventlistener',
+      'classlist',
+      'dataset',
+      'intersectionobserver',
+      'mutationobserver',
+      'requestanimationframe',
+      'scroll',
+      'resize',
+      'drag',
+      'touch',
+      'pointer',
+      'gesture',
     ],
     weight: 1,
     routing: {
-      simple:  { tier: 'executor', estimatedTokens: 3000 },
-      medium:  { tier: 'worker',   estimatedTokens: 6000 },
-      complex: { tier: 'worker',   estimatedTokens: 12000 },
+      simple: { tier: 'executor', estimatedTokens: 3000 },
+      medium: { tier: 'worker', estimatedTokens: 6000 },
+      complex: { tier: 'worker', estimatedTokens: 12000 },
     },
   });
 
@@ -264,14 +307,24 @@ function registerDefaults(): void {
     id: 'framework-lib',
     displayName: '框架 + 组件库',
     keywords: [
-      'ant design', 'antd', 'element-ui', 'element-plus', 'material-ui',
-      'mui', 'arco', 'naive-ui', 'vuetify', 'shadcn', 'radix', '组件库',
+      'ant design',
+      'antd',
+      'element-ui',
+      'element-plus',
+      'material-ui',
+      'mui',
+      'arco',
+      'naive-ui',
+      'vuetify',
+      'shadcn',
+      'radix',
+      '组件库',
     ],
     weight: 2,
     routing: {
-      simple:  { tier: 'executor', estimatedTokens: 3000 },
-      medium:  { tier: 'executor', estimatedTokens: 5000 },
-      complex: { tier: 'worker',   estimatedTokens: 10000 },
+      simple: { tier: 'executor', estimatedTokens: 3000 },
+      medium: { tier: 'executor', estimatedTokens: 5000 },
+      complex: { tier: 'worker', estimatedTokens: 10000 },
     },
   });
 
@@ -279,14 +332,19 @@ function registerDefaults(): void {
     id: 'framework-custom',
     displayName: '框架 + 自定义样式',
     keywords: [
-      '自定义组件', 'custom component', 'tailwind', 'css module',
-      'styled-component', '手写样式', '定制样式',
+      '自定义组件',
+      'custom component',
+      'tailwind',
+      'css module',
+      'styled-component',
+      '手写样式',
+      '定制样式',
     ],
     weight: 1.5,
     routing: {
-      simple:  { tier: 'executor', estimatedTokens: 4000 },
-      medium:  { tier: 'worker',   estimatedTokens: 8000 },
-      complex: { tier: 'worker',   estimatedTokens: 16000 },
+      simple: { tier: 'executor', estimatedTokens: 4000 },
+      medium: { tier: 'worker', estimatedTokens: 8000 },
+      complex: { tier: 'worker', estimatedTokens: 16000 },
     },
   });
 
@@ -294,13 +352,20 @@ function registerDefaults(): void {
     id: 'framework-lib-custom',
     displayName: '框架 + 组件库 + 自定义',
     keywords: [
-      '组件库改造', '二次封装', '主题定制', 'theme', 'token', '覆盖样式',
-      'override', '自定义主题', 'design token',
+      '组件库改造',
+      '二次封装',
+      '主题定制',
+      'theme',
+      'token',
+      '覆盖样式',
+      'override',
+      '自定义主题',
+      'design token',
     ],
     weight: 2.5,
     routing: {
-      simple:  { tier: 'worker',   estimatedTokens: 5000 },
-      medium:  { tier: 'worker',   estimatedTokens: 10000 },
+      simple: { tier: 'worker', estimatedTokens: 5000 },
+      medium: { tier: 'worker', estimatedTokens: 10000 },
       complex: { tier: 'reasoner', estimatedTokens: 20000 },
     },
   });
@@ -311,14 +376,26 @@ function registerDefaults(): void {
     id: 'chart',
     displayName: '图表类（ECharts / D3 等）',
     keywords: [
-      'echarts', 'd3', 'chart', '图表', 'highcharts', 'antv', 'g2',
-      '可视化', 'visualization', '柱状图', '折线图', '饼图', '热力图',
-      '仪表盘', 'dashboard',
+      'echarts',
+      'd3',
+      'chart',
+      '图表',
+      'highcharts',
+      'antv',
+      'g2',
+      '可视化',
+      'visualization',
+      '柱状图',
+      '折线图',
+      '饼图',
+      '热力图',
+      '仪表盘',
+      'dashboard',
     ],
     weight: 3,
     routing: {
-      simple:  { tier: 'worker',   estimatedTokens: 6000 },
-      medium:  { tier: 'worker',   estimatedTokens: 15000 },
+      simple: { tier: 'worker', estimatedTokens: 6000 },
+      medium: { tier: 'worker', estimatedTokens: 15000 },
       complex: { tier: 'reasoner', estimatedTokens: 30000 },
     },
   });
@@ -327,14 +404,28 @@ function registerDefaults(): void {
     id: 'threejs',
     displayName: '3D 类（Three.js / Babylon）',
     keywords: [
-      'three.js', 'threejs', '3d', 'webgl', 'webgpu', 'babylon',
-      'scene', 'mesh', 'geometry', 'material', 'shader', 'glsl',
-      'camera', 'renderer', 'orbit', '三维', '模型渲染',
+      'three.js',
+      'threejs',
+      '3d',
+      'webgl',
+      'webgpu',
+      'babylon',
+      'scene',
+      'mesh',
+      'geometry',
+      'material',
+      'shader',
+      'glsl',
+      'camera',
+      'renderer',
+      'orbit',
+      '三维',
+      '模型渲染',
     ],
     weight: 3,
     routing: {
-      simple:  { tier: 'worker',   estimatedTokens: 8000 },
-      medium:  { tier: 'reasoner', estimatedTokens: 20000 },
+      simple: { tier: 'worker', estimatedTokens: 8000 },
+      medium: { tier: 'reasoner', estimatedTokens: 20000 },
       complex: { tier: 'reasoner', estimatedTokens: 40000 },
     },
   });
@@ -343,14 +434,25 @@ function registerDefaults(): void {
     id: 'animation',
     displayName: '动画类（GSAP / Framer Motion）',
     keywords: [
-      'gsap', 'framer motion', 'lottie', 'rive', 'anime.js',
-      '动画', 'animate', '过渡', 'spring', 'easing', 'timeline',
-      '关键帧', 'keyframe', '缓动',
+      'gsap',
+      'framer motion',
+      'lottie',
+      'rive',
+      'anime.js',
+      '动画',
+      'animate',
+      '过渡',
+      'spring',
+      'easing',
+      'timeline',
+      '关键帧',
+      'keyframe',
+      '缓动',
     ],
     weight: 2,
     routing: {
-      simple:  { tier: 'executor', estimatedTokens: 3000 },
-      medium:  { tier: 'worker',   estimatedTokens: 8000 },
+      simple: { tier: 'executor', estimatedTokens: 3000 },
+      medium: { tier: 'worker', estimatedTokens: 8000 },
       complex: { tier: 'reasoner', estimatedTokens: 16000 },
     },
   });
@@ -361,15 +463,31 @@ function registerDefaults(): void {
     id: 'api-communication',
     displayName: '前后端通信',
     keywords: [
-      'api', 'fetch', 'axios', 'http', 'rest', 'graphql', 'websocket',
-      'sse', 'polling', '轮询', '请求', 'request', 'response', 'cors',
-      'interceptor', '拦截器', '重试', 'retry', 'timeout',
+      'api',
+      'fetch',
+      'axios',
+      'http',
+      'rest',
+      'graphql',
+      'websocket',
+      'sse',
+      'polling',
+      '轮询',
+      '请求',
+      'request',
+      'response',
+      'cors',
+      'interceptor',
+      '拦截器',
+      '重试',
+      'retry',
+      'timeout',
     ],
     weight: 2,
     routing: {
-      simple:  { tier: 'executor', estimatedTokens: 3000 },
-      medium:  { tier: 'worker',   estimatedTokens: 8000 },
-      complex: { tier: 'worker',   estimatedTokens: 16000 },
+      simple: { tier: 'executor', estimatedTokens: 3000 },
+      medium: { tier: 'worker', estimatedTokens: 8000 },
+      complex: { tier: 'worker', estimatedTokens: 16000 },
     },
   });
 
@@ -377,14 +495,26 @@ function registerDefaults(): void {
     id: 'data-processing',
     displayName: '数据处理',
     keywords: [
-      '大数据', '虚拟滚动', 'virtual scroll', '分页', 'pagination',
-      '数据转换', 'transform', '聚合', 'aggregate', 'filter', 'sort',
-      'web worker', 'wasm', '离屏渲染', 'offscreen',
+      '大数据',
+      '虚拟滚动',
+      'virtual scroll',
+      '分页',
+      'pagination',
+      '数据转换',
+      'transform',
+      '聚合',
+      'aggregate',
+      'filter',
+      'sort',
+      'web worker',
+      'wasm',
+      '离屏渲染',
+      'offscreen',
     ],
     weight: 2.5,
     routing: {
-      simple:  { tier: 'worker',   estimatedTokens: 5000 },
-      medium:  { tier: 'worker',   estimatedTokens: 12000 },
+      simple: { tier: 'worker', estimatedTokens: 5000 },
+      medium: { tier: 'worker', estimatedTokens: 12000 },
       complex: { tier: 'reasoner', estimatedTokens: 25000 },
     },
   });
@@ -393,15 +523,33 @@ function registerDefaults(): void {
     id: 'performance',
     displayName: '性能调优',
     keywords: [
-      '性能', 'performance', '优化', 'optimize', '渲染', 'render',
-      '重绘', 'repaint', 'reflow', '回流', '内存', 'memory', 'gc',
-      'profiler', 'lighthouse', '懒加载', 'lazy', 'code split',
-      '代码分割', 'tree shaking', 'bundle', '包大小',
+      '性能',
+      'performance',
+      '优化',
+      'optimize',
+      '渲染',
+      'render',
+      '重绘',
+      'repaint',
+      'reflow',
+      '回流',
+      '内存',
+      'memory',
+      'gc',
+      'profiler',
+      'lighthouse',
+      '懒加载',
+      'lazy',
+      'code split',
+      '代码分割',
+      'tree shaking',
+      'bundle',
+      '包大小',
     ],
     weight: 2.5,
     routing: {
-      simple:  { tier: 'worker',   estimatedTokens: 6000 },
-      medium:  { tier: 'reasoner', estimatedTokens: 15000 },
+      simple: { tier: 'worker', estimatedTokens: 6000 },
+      medium: { tier: 'reasoner', estimatedTokens: 15000 },
       complex: { tier: 'reasoner', estimatedTokens: 30000 },
     },
   });
@@ -410,14 +558,25 @@ function registerDefaults(): void {
     id: 'state-management',
     displayName: '状态管理',
     keywords: [
-      '状态', 'state', 'redux', 'zustand', 'pinia', 'vuex', 'mobx',
-      'jotai', 'recoil', 'context', 'provider', '状态机',
-      'xstate', 'finite state',
+      '状态',
+      'state',
+      'redux',
+      'zustand',
+      'pinia',
+      'vuex',
+      'mobx',
+      'jotai',
+      'recoil',
+      'context',
+      'provider',
+      '状态机',
+      'xstate',
+      'finite state',
     ],
     weight: 2,
     routing: {
-      simple:  { tier: 'executor', estimatedTokens: 4000 },
-      medium:  { tier: 'worker',   estimatedTokens: 10000 },
+      simple: { tier: 'executor', estimatedTokens: 4000 },
+      medium: { tier: 'worker', estimatedTokens: 10000 },
       complex: { tier: 'reasoner', estimatedTokens: 20000 },
     },
   });
@@ -426,15 +585,32 @@ function registerDefaults(): void {
     id: 'algorithm',
     displayName: '前端算法',
     keywords: [
-      '算法', 'algorithm', '搜索', 'search', '排序', 'sort',
-      '树操作', 'tree', 'diff', '路径', 'path', '递归', 'recursive',
-      '动态规划', 'dp', '缓存淘汰', 'lru', '防抖', 'debounce',
-      '节流', 'throttle',
+      '算法',
+      'algorithm',
+      '搜索',
+      'search',
+      '排序',
+      'sort',
+      '树操作',
+      'tree',
+      'diff',
+      '路径',
+      'path',
+      '递归',
+      'recursive',
+      '动态规划',
+      'dp',
+      '缓存淘汰',
+      'lru',
+      '防抖',
+      'debounce',
+      '节流',
+      'throttle',
     ],
     weight: 2,
     routing: {
-      simple:  { tier: 'worker',   estimatedTokens: 5000 },
-      medium:  { tier: 'reasoner', estimatedTokens: 12000 },
+      simple: { tier: 'worker', estimatedTokens: 5000 },
+      medium: { tier: 'reasoner', estimatedTokens: 12000 },
       complex: { tier: 'reasoner', estimatedTokens: 25000 },
     },
   });
@@ -447,13 +623,41 @@ registerDefaults();
 
 const COMPLEXITY_SIGNALS: Record<'complex' | 'simple', string[]> = {
   complex: [
-    '复杂', 'complex', '高级', 'advanced', '大量', '海量', '高并发',
-    '实时', 'realtime', '多层', '嵌套', 'nested', '深度', '精细',
-    '大规模', '企业级', 'enterprise', '高性能', '毫秒级',
+    '复杂',
+    'complex',
+    '高级',
+    'advanced',
+    '大量',
+    '海量',
+    '高并发',
+    '实时',
+    'realtime',
+    '多层',
+    '嵌套',
+    'nested',
+    '深度',
+    '精细',
+    '大规模',
+    '企业级',
+    'enterprise',
+    '高性能',
+    '毫秒级',
   ],
   simple: [
-    '简单', 'simple', '基础', 'basic', '最小', 'minimal', '快速',
-    'quick', '原型', 'prototype', '演示', 'demo', '示例', 'example',
+    '简单',
+    'simple',
+    '基础',
+    'basic',
+    '最小',
+    'minimal',
+    '快速',
+    'quick',
+    '原型',
+    'prototype',
+    '演示',
+    'demo',
+    '示例',
+    'example',
   ],
 };
 
@@ -519,7 +723,8 @@ export function classifyTask(requirement: string): TaskClassification {
 
   // Step 5: 判断是否可能需要会话交接
   const WEAK_MODEL_CONTEXT_LIMIT = 16000;
-  const mayNeedHandoff = route.tier === 'executor' && route.estimatedTokens > WEAK_MODEL_CONTEXT_LIMIT;
+  const mayNeedHandoff =
+    route.tier === 'executor' && route.estimatedTokens > WEAK_MODEL_CONTEXT_LIMIT;
 
   return {
     layer,
@@ -528,9 +733,10 @@ export function classifyTask(requirement: string): TaskClassification {
     recommendedTier: route.tier,
     estimatedContextTokens: route.estimatedTokens,
     mayNeedHandoff,
-    reasoning: matchedKeywords.length > 0
-      ? `匹配关键词: [${matchedKeywords.join(', ')}] → ${layer}/${category} (${complexity})`
-      : `未匹配到特定关键词，默认分类为 ${layer}/${category}`,
+    reasoning:
+      matchedKeywords.length > 0
+        ? `匹配关键词: [${matchedKeywords.join(', ')}] → ${layer}/${category} (${complexity})`
+        : `未匹配到特定关键词，默认分类为 ${layer}/${category}`,
   };
 }
 

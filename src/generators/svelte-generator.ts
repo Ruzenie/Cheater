@@ -2,17 +2,27 @@ import type { ComponentSpec } from '../tools/design/index.js';
 import type { CodeGenerator, CodeGeneratorOptions, GeneratedArtifact } from './types.js';
 
 function buildSvelteScaffold(spec: ComponentSpec): GeneratedArtifact[] {
-  const exportLines = spec.props.map((prop) => `export let ${prop.name}${prop.defaultValue ? ` = ${prop.defaultValue}` : ''};`);
-  const stateLines = spec.states.map((state) => `let ${state.name} = ${state.type === 'boolean' ? 'false' : state.type === 'number' ? '0' : "''"};`);
-  const eventLines = spec.events.map((event) => `function ${event.name}Handler(event) {\n  // TODO: ${event.description || event.name}\n}`);
+  const exportLines = spec.props.map(
+    (prop) => `export let ${prop.name}${prop.defaultValue ? ` = ${prop.defaultValue}` : ''};`,
+  );
+  const stateLines = spec.states.map(
+    (state) =>
+      `let ${state.name} = ${state.type === 'boolean' ? 'false' : state.type === 'number' ? '0' : "''"};`,
+  );
+  const eventLines = spec.events.map(
+    (event) =>
+      `function ${event.name}Handler(event) {\n  // TODO: ${event.description || event.name}\n}`,
+  );
 
   const content = `<script>\n${exportLines.length > 0 ? exportLines.join('\n') : '// TODO: 定义 props'}\n\n${stateLines.length > 0 ? stateLines.join('\n') : '// TODO: 定义组件状态'}\n\n${eventLines.length > 0 ? eventLines.join('\n\n') : '// TODO: 定义交互逻辑'}\n</script>\n\n<section class="${spec.name.toLowerCase()}">\n  <!-- TODO: 实现 ${spec.name} 的标记结构 -->\n</section>\n\n<style>\n.${spec.name.toLowerCase()} {\n  /* TODO: 实现 ${spec.name} 的样式 */\n}\n</style>`;
 
-  return [{
-    fileName: `${spec.name}.svelte`,
-    role: 'component',
-    content,
-  }];
+  return [
+    {
+      fileName: `${spec.name}.svelte`,
+      role: 'component',
+      content,
+    },
+  ];
 }
 
 export const svelteGenerator: CodeGenerator = {

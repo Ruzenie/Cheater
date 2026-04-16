@@ -79,7 +79,7 @@ class FrontendAgentTelemetry implements TelemetryIntegration {
   private verbose: boolean;
 
   constructor(options: { verbose?: boolean } = {}) {
-    this.verbose = options.verbose ?? (process.env.DEBUG_TELEMETRY === 'true');
+    this.verbose = options.verbose ?? process.env.DEBUG_TELEMETRY === 'true';
   }
 
   async onStart(event: any): Promise<void> {
@@ -92,7 +92,9 @@ class FrontendAgentTelemetry implements TelemetryIntegration {
     emit(telemetryEvent);
 
     if (this.verbose) {
-      console.log(`[telemetry] 🚀 start | model: ${event.model?.modelId} | fn: ${event.functionId ?? 'unknown'}`);
+      console.log(
+        `[telemetry] 🚀 start | model: ${event.model?.modelId} | fn: ${event.functionId ?? 'unknown'}`,
+      );
     }
   }
 
@@ -106,7 +108,9 @@ class FrontendAgentTelemetry implements TelemetryIntegration {
     emit(telemetryEvent);
 
     if (this.verbose) {
-      console.log(`[telemetry]   📍 step ${event.stepNumber} start | model: ${event.model?.modelId}`);
+      console.log(
+        `[telemetry]   📍 step ${event.stepNumber} start | model: ${event.model?.modelId}`,
+      );
     }
   }
 
@@ -116,11 +120,13 @@ class FrontendAgentTelemetry implements TelemetryIntegration {
       type: 'step-finish',
       timestamp: Date.now(),
       stepNumber: event.stepNumber,
-      tokenUsage: usage ? {
-        inputTokens: usage.inputTokens,
-        outputTokens: usage.outputTokens,
-        totalTokens: usage.totalTokens,
-      } : undefined,
+      tokenUsage: usage
+        ? {
+            inputTokens: usage.inputTokens,
+            outputTokens: usage.outputTokens,
+            totalTokens: usage.totalTokens,
+          }
+        : undefined,
     };
     emit(telemetryEvent);
 
@@ -158,7 +164,9 @@ class FrontendAgentTelemetry implements TelemetryIntegration {
 
     if (this.verbose) {
       const status = event.success !== false ? '✅' : '❌';
-      console.log(`[telemetry]     ${status} tool finish: ${event.toolCall?.toolName ?? event.toolName} (${event.durationMs ?? '?'}ms)`);
+      console.log(
+        `[telemetry]     ${status} tool finish: ${event.toolCall?.toolName ?? event.toolName} (${event.durationMs ?? '?'}ms)`,
+      );
     }
   }
 
@@ -167,11 +175,13 @@ class FrontendAgentTelemetry implements TelemetryIntegration {
     const telemetryEvent: TelemetryEvent = {
       type: 'finish',
       timestamp: Date.now(),
-      tokenUsage: totalUsage ? {
-        inputTokens: totalUsage.inputTokens,
-        outputTokens: totalUsage.outputTokens,
-        totalTokens: totalUsage.totalTokens,
-      } : undefined,
+      tokenUsage: totalUsage
+        ? {
+            inputTokens: totalUsage.inputTokens,
+            outputTokens: totalUsage.outputTokens,
+            totalTokens: totalUsage.totalTokens,
+          }
+        : undefined,
     };
     emit(telemetryEvent);
 
@@ -200,9 +210,7 @@ class FrontendAgentTelemetry implements TelemetryIntegration {
  * });
  * ```
  */
-export function frontendAgentTelemetry(
-  options: { verbose?: boolean } = {},
-): TelemetryIntegration {
+export function frontendAgentTelemetry(options: { verbose?: boolean } = {}): TelemetryIntegration {
   return bindTelemetryIntegration(new FrontendAgentTelemetry(options));
 }
 
@@ -219,16 +227,22 @@ export function resetTelemetryLog(): void {
 }
 
 /** 获取按 functionId 分组的统计 */
-export function getTelemetryStats(): Record<string, {
-  calls: number;
-  totalInputTokens: number;
-  totalOutputTokens: number;
-}> {
-  const stats: Record<string, {
+export function getTelemetryStats(): Record<
+  string,
+  {
     calls: number;
     totalInputTokens: number;
     totalOutputTokens: number;
-  }> = {};
+  }
+> {
+  const stats: Record<
+    string,
+    {
+      calls: number;
+      totalInputTokens: number;
+      totalOutputTokens: number;
+    }
+  > = {};
 
   let currentFunctionId = 'unknown';
 

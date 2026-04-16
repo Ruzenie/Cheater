@@ -4,12 +4,30 @@ import type { CodeGenerator, CodeGeneratorOptions, GeneratedArtifact } from './t
 function buildVueScaffold(spec: ComponentSpec): GeneratedArtifact[] {
   const propsEntries = spec.props.map((prop) => {
     const defaultPart = prop.defaultValue ? `, default: ${prop.defaultValue}` : '';
-    const vueType = ({ string: 'String', number: 'Number', boolean: 'Boolean', object: 'Object', array: 'Array', function: 'Function' } as Record<string, string>)[prop.type?.toLowerCase() ?? ''] ?? prop.type ?? 'String';
+    const vueType =
+      (
+        {
+          string: 'String',
+          number: 'Number',
+          boolean: 'Boolean',
+          object: 'Object',
+          array: 'Array',
+          function: 'Function',
+        } as Record<string, string>
+      )[prop.type?.toLowerCase() ?? ''] ??
+      prop.type ??
+      'String';
     return `  ${prop.name}: { type: ${vueType}${defaultPart} }`;
   });
 
-  const stateLines = spec.states.map((state) => `const ${state.name} = ref(${state.type === 'boolean' ? 'false' : state.type === 'number' ? '0' : "''"});`);
-  const eventLines = spec.events.map((event) => `function ${event.name}Handler(payload${event.payload && event.payload !== 'void' ? `: ${event.payload}` : ''}) {\n  // TODO: ${event.description || event.name}\n}`);
+  const stateLines = spec.states.map(
+    (state) =>
+      `const ${state.name} = ref(${state.type === 'boolean' ? 'false' : state.type === 'number' ? '0' : "''"});`,
+  );
+  const eventLines = spec.events.map(
+    (event) =>
+      `function ${event.name}Handler(payload${event.payload && event.payload !== 'void' ? `: ${event.payload}` : ''}) {\n  // TODO: ${event.description || event.name}\n}`,
+  );
 
   const template = `<template>\n  <section class="${spec.name.toLowerCase()}">\n    <!-- TODO: 实现 ${spec.name} 的模板结构 -->\n  </section>\n</template>`;
 
@@ -17,11 +35,13 @@ function buildVueScaffold(spec: ComponentSpec): GeneratedArtifact[] {
 
   const style = `<style scoped>\n.${spec.name.toLowerCase()} {\n  /* TODO: 实现 ${spec.name} 的样式 */\n}\n</style>`;
 
-  return [{
-    fileName: `${spec.name}.vue`,
-    role: 'component',
-    content: `${template}\n\n${script}\n\n${style}`,
-  }];
+  return [
+    {
+      fileName: `${spec.name}.vue`,
+      role: 'component',
+      content: `${template}\n\n${script}\n\n${style}`,
+    },
+  ];
 }
 
 export const vueGenerator: CodeGenerator = {

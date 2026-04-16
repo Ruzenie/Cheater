@@ -22,10 +22,17 @@ export {
   updateCategoryRouting,
 } from './config/index.js';
 export type {
-  AllProviders, ModelTier, TaskType,
-  TaskLayer, ViewCategory, LogicCategory,
-  BuiltinViewCategory, BuiltinLogicCategory,
-  TaskClassification, CategoryRegistration, RoutingEntry,
+  AllProviders,
+  ModelTier,
+  TaskType,
+  TaskLayer,
+  ViewCategory,
+  LogicCategory,
+  BuiltinViewCategory,
+  BuiltinLogicCategory,
+  TaskClassification,
+  CategoryRegistration,
+  RoutingEntry,
 } from './config/index.js';
 
 // Generators
@@ -50,23 +57,44 @@ export type {
   OrchestratorResult,
   RefinedRequirement,
   DesignOutput,
-  ProjectStructure, ProjectPlannerResult, ProjectFileEntry, ComponentMapping,
-  CodeOutput, CodeProducerResult,
+  ProjectStructure,
+  ProjectPlannerResult,
+  ProjectFileEntry,
+  ComponentMapping,
+  CodeOutput,
+  CodeProducerResult,
   AuditOutput,
-  AssemblyResult, AssembledFile,
+  AssemblyResult,
+  AssembledFile,
   // Legacy
   AssembledPageResult,
 } from './agents/index.js';
 
 // Session (会话上下文管理)
 export { SessionManager, ContextTracker } from './session/index.js';
-export type { SessionSnapshot, HandoffPackage, MigrationRecord, ContextUsage } from './session/index.js';
+export type {
+  SessionSnapshot,
+  HandoffPackage,
+  MigrationRecord,
+  ContextUsage,
+} from './session/index.js';
 
 // Middleware — 成本追踪
-export { printCostReport, getCostRecords, getTotalCost, getCostByModel, resetCostRecords } from './middleware/index.js';
+export {
+  printCostReport,
+  getCostRecords,
+  getTotalCost,
+  getCostByModel,
+  resetCostRecords,
+} from './middleware/index.js';
 
 // Middleware — 缓存
-export { cacheMiddleware, createCacheMiddleware, getDefaultCache, type CacheStore } from './middleware/index.js';
+export {
+  cacheMiddleware,
+  createCacheMiddleware,
+  getDefaultCache,
+  type CacheStore,
+} from './middleware/index.js';
 
 // Middleware — Telemetry
 export {
@@ -83,12 +111,38 @@ export {
 export { scanSecurity, scanA11y, scanPerformance } from './rules/index.js';
 
 // Tools (供外部自定义 Agent 时复用)
-export { decomposeRequirement, planResponsiveStrategy, planStateManagement } from './tools/design/index.js';
-export { scaffoldComponent, generateStyles, addInteractions, selfReview } from './tools/code/index.js';
-export { securityScanTool, a11yScanTool, performanceScanTool, fullAuditTool } from './tools/audit/index.js';
+export {
+  decomposeRequirement,
+  planResponsiveStrategy,
+  planStateManagement,
+} from './tools/design/index.js';
+export {
+  scaffoldComponent,
+  generateStyles,
+  addInteractions,
+  selfReview,
+} from './tools/code/index.js';
+export {
+  securityScanTool,
+  a11yScanTool,
+  performanceScanTool,
+  fullAuditTool,
+} from './tools/audit/index.js';
 export { analyzeComplexity, qualityGate } from './tools/shared/index.js';
-export { planProjectStructure, generateConfigFile, inferDependencies, generateScaffoldCommands } from './tools/project/index.js';
-export { placeComponent, generateEntryFiles, generateBarrelExports, fixImportPaths, mergeStyles, writeProjectToDisk } from './tools/assembly/index.js';
+export {
+  planProjectStructure,
+  generateConfigFile,
+  inferDependencies,
+  generateScaffoldCommands,
+} from './tools/project/index.js';
+export {
+  placeComponent,
+  generateEntryFiles,
+  generateBarrelExports,
+  fixImportPaths,
+  mergeStyles,
+  writeProjectToDisk,
+} from './tools/assembly/index.js';
 export { webSearch, fetchUrl, npmPackageInfo, fetchDocSnippet } from './tools/web/index.js';
 
 // Utils (共享工具函数)
