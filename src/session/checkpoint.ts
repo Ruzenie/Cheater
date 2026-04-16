@@ -167,7 +167,7 @@ export function deleteCheckpoint(sessionId: string, storageDir?: string): void {
 
 /**
  * 自动查找可恢复的 checkpoint。
- * 根据 requirement 匹配（同一个需求 = 同一个任务）。
+ * 使用标准化后的 requirement 匹配，容忍空白、标点和措辞的细微差异。
  */
 export function findResumableCheckpoint(
   requirement: string,
@@ -180,6 +180,7 @@ export function findResumableCheckpoint(
   }
 
   const files = fs.readdirSync(dir).filter((f) => f.endsWith('.json'));
+  const normalizedReq = normalizeRequirement(requirement);
 
   // 按修改时间倒序，取最新的匹配项
   const candidates: Array<{ checkpoint: PipelineCheckpoint; mtime: number }> = [];
@@ -193,7 +194,7 @@ export function findResumableCheckpoint(
 
       if (
         data.version === 1 &&
-        data.requirement.trim() === requirement.trim() &&
+        normalizeRequirement(data.requirement) === normalizedReq &&
         data.lastCompletedStep !== 'assemble'
       ) {
         candidates.push({ checkpoint: data, mtime: stat.mtimeMs });
@@ -210,6 +211,25 @@ export function findResumableCheckpoint(
   // 取最新的
   candidates.sort((a, b) => b.mtime - a.mtime);
   return candidates[0].checkpoint;
+}
+
+/**
+ * 标准化 requirement 文本，用于匹配时容忍细微差异：
+ * - 去除首尾空白
+ * - 折叠连续空白为单个空格
+ * - 去除标点符号差异（。，！？等）
+ * - 统一为小写
+ *
+ * 这样 "创建一个 Todo 应用" 和 "创建一个Todo应用。" 会被视为同一个任务。
+ */
+function normalizeRequirement(text: string): string {
+  return text
+    .trim()
+    .toLowerCase()
+    .replace(/[，。！？、；：""''「」【】（）\s]+/g, ' ')
+    .replace(/[,.\-!?;:'"()\[\]{}\s]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 /** 创建空白 checkpoint */

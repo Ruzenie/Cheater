@@ -40,27 +40,32 @@ async function safeFetch(
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeout);
 
-    const response = await fetch(url, {
-      signal: controller.signal,
-      headers: { ...DEFAULT_HEADERS, ...headers },
-    });
+    try {
+      const response = await fetch(url, {
+        signal: controller.signal,
+        headers: { ...DEFAULT_HEADERS, ...headers },
+      });
 
-    clearTimeout(timer);
+      clearTimeout(timer);
 
-    const contentType = response.headers.get('content-type') ?? '';
-    let text = await response.text();
+      const contentType = response.headers.get('content-type') ?? '';
+      let text = await response.text();
 
-    // 截断过长内容
-    if (text.length > MAX_CONTENT_LENGTH) {
-      text = text.slice(0, MAX_CONTENT_LENGTH) + '\n\n... [内容已截断]';
+      // 截断过长内容
+      if (text.length > MAX_CONTENT_LENGTH) {
+        text = text.slice(0, MAX_CONTENT_LENGTH) + '\n\n... [内容已截断]';
+      }
+
+      return {
+        ok: response.ok,
+        status: response.status,
+        text,
+        contentType,
+      };
+    } catch (fetchError) {
+      clearTimeout(timer); // 确保异常路径也清理定时器
+      throw fetchError;    // 重新抛出，由外层 catch 处理
     }
-
-    return {
-      ok: response.ok,
-      status: response.status,
-      text,
-      contentType,
-    };
   } catch (error: any) {
     const message =
       error.name === 'AbortError' ? `请求超时 (${timeout}ms)` : (error.message ?? String(error));

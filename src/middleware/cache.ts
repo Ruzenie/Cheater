@@ -22,7 +22,7 @@ export interface CacheStore {
 
 /** 内存缓存（默认） */
 class MemoryCache implements CacheStore {
-  private store = new Map<string, { value: any; expiresAt: number }>();
+  private store = new Map<string, { value: any; expiresAt: number; lastAccessed: number }>();
 
   async get(key: string): Promise<any | null> {
     const entry = this.store.get(key);
@@ -31,6 +31,8 @@ class MemoryCache implements CacheStore {
       this.store.delete(key);
       return null;
     }
+    // 更新最后访问时间（LRU 追踪）
+    entry.lastAccessed = Date.now();
     return entry.value;
   }
 
@@ -42,14 +44,15 @@ class MemoryCache implements CacheStore {
         if (now > v.expiresAt) this.store.delete(k);
       }
     }
-    // 硬上限：超过 500 条目时清理最旧的
+    // 硬上限：超过 500 条目时按 LRU（最久未访问）淘汰
     if (this.store.size >= 500) {
-      const oldest = [...this.store.entries()].sort((a, b) => a[1].expiresAt - b[1].expiresAt);
-      for (let i = 0; i < 100 && i < oldest.length; i++) {
-        this.store.delete(oldest[i][0]);
+      const lru = [...this.store.entries()].sort((a, b) => a[1].lastAccessed - b[1].lastAccessed);
+      for (let i = 0; i < 100 && i < lru.length; i++) {
+        this.store.delete(lru[i][0]);
       }
     }
-    this.store.set(key, { value, expiresAt: Date.now() + ttlMs });
+    const now = Date.now();
+    this.store.set(key, { value, expiresAt: now + ttlMs, lastAccessed: now });
   }
 
   /** 清除所有缓存 */
