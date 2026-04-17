@@ -146,7 +146,7 @@ const RULES: PerfRule[] = [
       const bigLibs = ['lodash', 'moment', 'antd', 'material-ui', '@mui/material'];
       let count = 0;
       for (const lib of bigLibs) {
-        // 检测 import xxx from 'lodash' （非 import { xxx } from 'lodash'）
+        // 正则说明：匹配 import xxx from 'lodash' 形式（默认导入），不匹配按需导入
         const fullImport = new RegExp(`import\\s+\\w+\\s+from\\s+['"\`]${lib}['"\`]`, 'g');
         count += (code.match(fullImport) ?? []).length;
       }
@@ -159,7 +159,9 @@ const RULES: PerfRule[] = [
     message: '存在串行的 await 调用，如果相互独立可以改用 Promise.all 并行执行',
     suggestion: '将独立的异步调用改为 Promise.all([...]) 并行执行',
     check: (code) => {
-      // 连续的 await 行数
+      // 检测连续的 await 语句行数
+      // 如果有 3 行或以上连续的 await，说明这些异步调用可能是独立的，
+      // 可以改用 Promise.all 并行执行以提升性能
       const lines = code.split('\n');
       let consecutiveAwaits = 0;
       let maxConsecutive = 0;
@@ -178,6 +180,14 @@ const RULES: PerfRule[] = [
 
 /**
  * 扫描代码的性能问题
+ *
+ * @description
+ * 遍历所有预定义的性能规则，对输入代码执行检查函数。
+ * 每条 check 函数返回问题数量（0 表示通过），非零则生成 PerformanceIssue。
+ * 结果按严重等级排序（critical → warning → info）。
+ *
+ * @param code - 要扫描的源代码字符串
+ * @returns 性能问题列表（含改进建议），按严重等级排序
  */
 export function scanPerformance(code: string): PerformanceIssue[] {
   const issues: PerformanceIssue[] = [];
