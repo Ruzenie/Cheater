@@ -383,7 +383,16 @@ export function isStepCompleted(checkpoint: PipelineCheckpoint, step: PipelineSt
   return stepIdx <= lastIdx;
 }
 
-/** 获取下一个需要执行的 step */
+/**
+ * 获取下一个需要执行的 step
+ *
+ * @description
+ * 根据 lastCompletedStep 在 PIPELINE_STEPS 中的位置，
+ * 返回下一个待执行的步骤。如果所有步骤都已完成，返回 null。
+ *
+ * @param checkpoint - checkpoint 对象
+ * @returns 下一个步骤，全部完成则返回 null
+ */
 export function getNextStep(checkpoint: PipelineCheckpoint): PipelineStep | null {
   if (!checkpoint.lastCompletedStep) {
     return PIPELINE_STEPS[0];
