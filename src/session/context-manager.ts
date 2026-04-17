@@ -213,7 +213,10 @@ export class ContextTracker {
     this.currentTokens += count;
   }
 
-  /** 获取当前使用状态 */
+  /**
+   * 获取当前使用状态
+   * @returns 包含当前 token 数、最大 token 数、使用百分比的对象
+   */
   getUsage(): ContextUsage {
     return {
       currentTokens: this.currentTokens,
