@@ -1,13 +1,34 @@
+/**
+ * @file __tests__/json.test.ts — safeParseJson 单元测试
+ *
+ * 本测试文件验证 utils/json.ts 中 safeParseJson() 函数的正确性。
+ * 覆盖的测试场景：
+ *   - 基础 happy path：标准 JSON 解析
+ *   - Markdown code fence 去除
+ *   - 中文前缀/后缀文本去除
+ *   - 尾逗号修复（trailing commas）
+ *   - 字符串值中包含 {} [] 等特殊字符的正确处理（最关键的边界场景）
+ *   - 深层嵌套对象/数组
+ *   - 顶层数组解析
+ *   - 转义引号处理
+ *   - 无效输入的错误抛出
+ *
+ * 使用 Vitest 作为测试框架。
+ */
 import { describe, it, expect } from 'vitest';
 import { safeParseJson } from '../utils/json';
 
-/** Helper to parse and cast to Record for property access in tests */
+/**
+ * 辅助函数：解析 JSON 文本并强制转换为 Record 类型，方便测试中的属性访问。
+ * @param text - 待解析的文本
+ * @returns 解析后的 Record 对象
+ */
 function parse(text: string): Record<string, unknown> {
   return safeParseJson(text) as Record<string, unknown>;
 }
 
 describe('safeParseJson', () => {
-  // ── 基础 happy path ──
+  // ── 基础 happy path —— 标准 JSON 解析 ──
 
   it('should parse valid JSON', () => {
     const result = parse('{"name": "test"}');
@@ -36,7 +57,8 @@ describe('safeParseJson', () => {
     expect(() => safeParseJson('not json at all')).toThrow();
   });
 
-  // ── CRITICAL: 字符串值中包含括号 ──
+  // ── 关键边界场景：字符串值中包含括号字符 ──
+  // 这是 safeParseJson 最重要的测试 —— 确保不会被字符串值中的 {} [] 误导截断
 
   it('should NOT truncate when string value contains }', () => {
     const input = '{"code": "function foo() { return 1; }", "name": "test"}';
@@ -69,7 +91,7 @@ describe('safeParseJson', () => {
     expect(result.code).toBe('if (x) { return; }');
   });
 
-  // ── 数组/对象嵌套 ──
+  // ── 数组和对象的深层嵌套 ──
 
   it('should handle deeply nested objects', () => {
     const input = '{"a": {"b": {"c": [1, 2, {"d": "e"}]}}}';
@@ -90,7 +112,7 @@ describe('safeParseJson', () => {
     expect(result[0].code).toBe('() => { return [1,2]; }');
   });
 
-  // ── 前后缀混杂 ──
+  // ── 前后缀混杂 —— 模拟 LLM 在 JSON 前后添加自然语言 ──
 
   it('should strip Chinese prefix and suffix', () => {
     const input = '好的，这是你要的JSON：\n{"result": true}\n以上就是结果。';
@@ -104,7 +126,7 @@ describe('safeParseJson', () => {
     expect(result.files[0].name).toBe('App.tsx');
   });
 
-  // ── 尾逗号边界 ──
+  // ── 尾逗号边界 —— 验证非字符串上下文中的尾逗号修复 ──
 
   it('should fix trailing comma in nested structure', () => {
     const input = '{"items": [1, 2, 3,], "meta": {"count": 3,}}';
@@ -120,7 +142,7 @@ describe('safeParseJson', () => {
     expect(result.ok).toBe(true);
   });
 
-  // ── 转义引号 ──
+  // ── 转义引号 —— 验证字符串内的转义引号不会破坏解析 ──
 
   it('should handle escaped quotes in strings', () => {
     const input = '{"html": "<div class=\\"test\\">hello</div>"}';

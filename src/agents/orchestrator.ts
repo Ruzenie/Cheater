@@ -1,6 +1,27 @@
 /**
  * orchestrator.ts — 总调度器 Agent（v5 — 完整项目规划 + 代码组装）
  *
+ * 本文件是整个前端代码生成系统的顶层控制器，负责串联所有子 Agent 形成完整的代码生成流水线。
+ * 它管理 8 个步骤（Step 0-7）的执行顺序、断点恢复、预算控制、上下文溢出检测和会话交接。
+ *
+ * 在流水线中的位置：
+ *   作为入口被外部调用方（CLI / API）调用，内部依次调度
+ *   prompt-refiner → design-analyzer → project-planner → code-producer → code-auditor → code-assembler
+ *
+ * 模型策略：
+ *   - 自身不直接调用 LLM，而是委托各子 Agent 选择合适的模型层级
+ *   - Step 1（分类+路由）为零 LLM 成本的纯规则逻辑
+ *   - Step 3+4 采用 fork-join 并行模式，项目规划与代码生成同时执行以降低总延迟
+ *   - Step 5 审计循环最多 MAX_ITERATIONS 轮，不达标时重新生成代码并升级模型
+ *
+ * 输入：
+ *   @param requirement - 用户的自然语言需求描述
+ *   @param providers   - 所有 LLM 提供商配置（包含 worker/executor/reasoner 三级模型）
+ *   @param options     - 框架、样式、预算、并行度等可选配置
+ *
+ * 输出：
+ *   @returns OrchestratorResult - 包含精炼需求、分类、设计、规划、代码、审计、组装的全量结果
+ *
  *
  * Pipeline:
  *   Step 0: Prompt Refiner (executor) → 精炼需求
@@ -43,7 +64,13 @@ import path from 'node:path';
 
 // ── 输出类型 ──────────────────────────────────────────
 
+/**
+ * 调度器的最终输出结构。
+ * 包含流水线每个步骤的产出，以及全局元信息（迭代次数、最终判定、成本）。
+ * 外部调用方可通过此结构获取生成项目的所有中间产物和最终文件。
+ */
 export interface OrchestratorResult {
+  /** 用户原始需求文本 */
   requirement: string;
   /** 精炼后的需求（如果启用了 Prompt Refiner） */
   refinedRequirement?: RefinedRequirement;
@@ -51,15 +78,21 @@ export interface OrchestratorResult {
   classification: TaskClassification;
   /** 是否跨层 */
   crossLayer: { isCrossLayer: boolean; viewScore: number; logicScore: number };
+  /** 各步骤是否需要执行的开关映射 */
   pipeline: { design: boolean; plan: boolean; code: boolean; audit: boolean; assemble: boolean };
+  /** Step 2 设计分析产出 */
   design?: DesignOutput;
   /** v5: 项目结构规划 */
   plan?: ProjectPlannerResult;
+  /** Step 4 代码生成产出 */
   code?: CodeProducerResult;
+  /** Step 5/7 审计产出 */
   audit?: AuditOutput;
   /** v5: 组装后的完整项目 */
   assembly?: AssemblyResult;
+  /** 审计-修复循环的实际迭代次数 */
   iterations: number;
+  /** 最终质量判定：passed=全部通过 / failed=达到最大迭代仍不通过 / partial=部分完成（预算或上下文不足） */
   finalVerdict: 'passed' | 'failed' | 'partial';
   /** 会话交接包（如果触发了迁移） */
   handoff?: HandoffPackage;
@@ -75,8 +108,15 @@ const QUALITY_THRESHOLD = 7;
 /** 默认预算上限（美元） */
 const DEFAULT_BUDGET_LIMIT = 5.0;
 
-// ── 预算检查 ──
+// ── 预算检查 ──────────────────────────────────────────
 
+/**
+ * 检查当前累计成本是否已超出预算上限。
+ * 在每个耗费 LLM 的步骤执行前调用，超限时提前终止流水线。
+ *
+ * @param budgetLimit - 预算上限（美元）
+ * @returns 包含是否超限标志和当前累计成本
+ */
 function checkBudget(budgetLimit: number): { exceeded: boolean; currentCost: number } {
   const currentCost = getTotalCost();
   return {
@@ -85,8 +125,16 @@ function checkBudget(budgetLimit: number): { exceeded: boolean; currentCost: num
   };
 }
 
-// ── 需求分析（基于新的分类体系）──
+// ── 需求分析（基于新的分类体系）──────────────────────
 
+/**
+ * 对需求进行零 LLM 成本的多维分类分析。
+ * 使用规则引擎（task-taxonomy）判断需求属于哪个层级（view/logic/data），
+ * 检测是否跨层，并据此决定流水线中哪些步骤需要执行。
+ *
+ * @param requirement - 精炼后的需求文本
+ * @returns classification（分类结果）、crossLayer（跨层检测）、pipeline（步骤开关）
+ */
 function analyzeRequirement(requirement: string): {
   classification: TaskClassification;
   crossLayer: ReturnType<typeof detectCrossLayer>;
@@ -111,6 +159,13 @@ function analyzeRequirement(requirement: string): {
   return { classification, crossLayer, pipeline };
 }
 
+/**
+ * 当设计分析步骤被跳过（或失败）时，生成一个兜底的单组件规格。
+ * 将整个需求作为一个 MainComponent 的描述，确保代码生成步骤有输入可用。
+ *
+ * @param requirement - 需求描述
+ * @returns 包含单个 MainComponent 的 ComponentSpec 数组
+ */
 function getDefaultSpecs(requirement: string) {
   return [
     {
@@ -126,6 +181,29 @@ function getDefaultSpecs(requirement: string) {
 
 // ── Agent 主函数 ──────────────────────────────────────
 
+/**
+ * 调度器主函数 — 执行完整的前端代码生成流水线。
+ *
+ * 执行流程概要：
+ *   1. 初始化会话管理器和断点恢复
+ *   2. Step 0: 需求精炼（可跳过）
+ *   3. Step 1: 框架路由 + 零成本分类
+ *   4. Step 2: 设计分析（生成组件树）
+ *   5. Step 3+4: 项目规划 ⚡ 代码生成（fork-join 并行）
+ *   6. Step 5: 代码审计循环（最多 MAX_ITERATIONS 轮）
+ *   7. Step 6: 代码组装（合并为可运行项目）
+ *   8. Step 7: 最终审计
+ *
+ * 特性：
+ *   - 每个步骤完成后保存 checkpoint，崩溃后可从断点恢复
+ *   - 每个 LLM 步骤前检查预算，超限自动停止
+ *   - 上下文 tokens 预估不足时生成交接包（handoff）供新会话续接
+ *
+ * @param requirement - 用户的自然语言需求
+ * @param providers   - LLM 提供商配置集合
+ * @param options     - 可选配置（框架、样式、预算、并行度、输出目录等）
+ * @returns 包含所有步骤产出的 OrchestratorResult
+ */
 export async function runOrchestrator(
   requirement: string,
   providers: AllProviders,
@@ -348,6 +426,7 @@ export async function runOrchestrator(
   });
   session.trackTokens(500);
 
+  // ── 初始化结果对象，填入分类阶段的产出 ──
   const result: OrchestratorResult = {
     requirement,
     refinedRequirement: refinedResult,
@@ -366,7 +445,7 @@ export async function runOrchestrator(
   if (checkpoint.audit) result.audit = checkpoint.audit;
   if (checkpoint.assembly) result.assembly = checkpoint.assembly;
 
-  // ── Step 2: 检查上下文是否够用 ──
+  // ── Step 2: 检查上下文是否够用（预估后续步骤的 token 消耗，不足则生成交接包提前退出）──
   if (session.predictOverflow(classification.estimatedContextTokens)) {
     console.log('\n⚠️  上下文预估不足！生成交接包...');
     const handoff = session.generateHandoff();
@@ -794,6 +873,7 @@ export async function runOrchestrator(
       }
     }
   }
+  // ── 保存会话快照到磁盘（用于调试和审计追溯，失败不影响主流程）──
   try {
     const snapshotPath = session.saveSnapshot();
     console.log(`💾 会话快照已保存：${snapshotPath}`);

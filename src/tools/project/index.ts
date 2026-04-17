@@ -1,22 +1,41 @@
 /**
- * tools/project/index.ts — 项目规划工具集
+ * @file tools/project/index.ts — 项目规划工具集
  *
- * 为 Project Planner Agent 提供的工具：
- *   1. planProjectStructure — 根据框架规划目录结构
- *   2. generateConfigFile   — 生成配置文件内容
- *   3. inferDependencies    — 推断依赖清单
- *   4. generateScaffoldCommands — 生成脚手架指令
+ * 本文件定义了 Project Planner Agent 使用的项目结构规划工具。
+ * 核心思想是将项目搭建知识（目录结构、依赖版本、配置模板）预编码为静态映射表，
+ * AI Agent 只需选择框架和特性，即可获得完整的项目骨架方案。
+ *
+ * 在 Cheater Pipeline 中的位置：
+ *   需求精炼 → 设计分析 → **项目规划** → 代码生成 → 代码审计 → 代码组装
+ *
+ * 提供的工具：
+ *   1. planProjectStructure    — 根据框架和组件列表规划目录结构
+ *   2. generateConfigFile      — 生成 package.json / tsconfig / vite.config 等配置文件
+ *   3. inferDependencies       — 根据框架 + 样式 + 特性推断 npm 依赖清单
+ *   4. generateScaffoldCommands — 生成项目初始化脚手架命令（npm/pnpm/yarn/bun）
+ *
+ * 内部数据结构：
+ *   - FRAMEWORK_STRUCTURES     — 框架标准目录模板（React / Vue / Svelte / Vanilla）
+ *   - FRAMEWORK_DEPENDENCIES   — 框架核心依赖及版本映射
+ *   - STYLE_DEPENDENCIES       — 样式方案依赖映射（Tailwind / Sass / styled-components 等）
+ *   - FEATURE_DEPENDENCIES     — 功能特性依赖映射（路由、状态管理、动画、测试等）
+ *
+ * 所有工具均为纯计算逻辑，不依赖 LLM，可零成本调用。
  */
 
 import { tool } from 'ai';
 import { z } from 'zod';
 
 // ── 框架标准目录模板 ──────────────────────────────
+// 以下映射表预定义了各框架的推荐目录结构和入口文件列表。
 
 /**
- * 预定义的框架目录结构模板，包含常见的前端框架和原生方案。每个框架定义了推荐的目录和入口文件路径，供 Project Planner 参考生成项目结构。
- * 设计时参考了社区最佳实践和官方模板，确保生成的结构合理且易于维护。
- * 未来可根据需求增加更多框架或自定义选项。
+ * 预定义的框架目录结构模板。
+ *
+ * 包含 React / Vue / Svelte / 原生 HTML 四种方案，
+ * 每个框架定义了推荐的目录列表和入口文件路径。
+ * 设计参考了社区最佳实践和官方模板（Vite / SvelteKit 等），
+ * 确保生成的项目结构合理且符合开发者习惯。
  */
 const FRAMEWORK_STRUCTURES: Record<
   string,
@@ -94,9 +113,14 @@ const FRAMEWORK_STRUCTURES: Record<
 };
 
 // ── 依赖映射表 ──────────────────────────────────
+// 以下三个映射表分别定义了框架、样式方案和功能特性的 npm 依赖。
+// Project Planner 根据用户需求查表合并，无需 LLM 推断。
 
 /**
- * 预定义的框架和功能依赖映射表，根据不同的框架、样式方案和功能特性，列出了推荐的 npm 依赖和开发依赖。Project Planner 可以根据用户需求自动推断需要安装哪些包，生成 package.json 的依赖列表，以及提供安装指令。
+ * 预定义的框架核心依赖映射表。
+ *
+ * 按框架分类列出必要的 dependencies 和 devDependencies，
+ * 包含推荐的版本号（使用 ^ 范围语义化版本）。
  */
 const FRAMEWORK_DEPENDENCIES: Record<
   string,
@@ -146,7 +170,11 @@ const FRAMEWORK_DEPENDENCIES: Record<
 };
 
 /**
- * 预定义的样式方案依赖映射表，根据不同的样式方案（如 Tailwind、CSS Modules、Sass、Styled Components 等），列出了推荐的 npm 依赖和开发依赖。Project Planner 可以根据用户选择的样式方案自动推断需要安装哪些包，生成 package.json 的依赖列表，以及提供安装指令。
+ * 预定义的样式方案依赖映射表。
+ *
+ * 按样式方案分类列出额外需要的 npm 包，
+ * 如 Tailwind CSS、Sass、styled-components 等。
+ * CSS 和 CSS Modules 不需要额外依赖（内置于 Vite）。
  */
 const STYLE_DEPENDENCIES: Record<
   string,
@@ -187,7 +215,11 @@ const STYLE_DEPENDENCIES: Record<
 };
 
 /**
- * 预定义的功能特性依赖映射表，根据不同的功能需求（如路由、状态管理、动画、表单验证、图标库、HTTP 客户端、测试框架等），列出了推荐的 npm 依赖和开发依赖。Project Planner 可以根据用户选择的功能特性自动推断需要安装哪些包，生成 package.json 的依赖列表，以及提供安装指令。
+ * 预定义的功能特性依赖映射表。
+ *
+ * 按功能需求分类列出额外的 npm 包和可能需要的目录。
+ * 支持的特性：路由、状态管理、动画、表单验证、图标库、HTTP 客户端、测试框架等。
+ * 部分特性还附带推荐的目录结构（如 router → src/pages）。
  */
 const FEATURE_DEPENDENCIES: Record<
   string,
@@ -245,8 +277,18 @@ const FEATURE_DEPENDENCIES: Record<
   },
 };
 
-// ── 配置文件模板 ──────────────────────────────────
+// ── 配置文件模板生成器 ──────────────────────────────
+// 以下函数生成各类项目配置文件的文本内容。
 
+/**
+ * 生成 package.json 文件内容。
+ *
+ * 合并框架默认脚本、用户自定义脚本、生产依赖和开发依赖。
+ * 输出格式化的 JSON 字符串（2 空格缩进）。
+ *
+ * @param opts - 项目名、框架、依赖、脚本等配置选项
+ * @returns package.json 的 JSON 字符串
+ */
 function generatePackageJson(opts: {
   projectName: string;
   framework: string;
@@ -254,6 +296,7 @@ function generatePackageJson(opts: {
   devDependencies: Record<string, string>;
   scripts?: Record<string, string>;
 }): string {
+  // 各框架的默认 npm scripts
   const defaultScripts: Record<string, Record<string, string>> = {
     react: { dev: 'vite', build: 'tsc -b && vite build', preview: 'vite preview' },
     vue: { dev: 'vite', build: 'vue-tsc -b && vite build', preview: 'vite preview' },
@@ -274,6 +317,7 @@ function generatePackageJson(opts: {
   return JSON.stringify(pkg, null, 2);
 }
 
+/** tsconfig.json 的 compilerOptions 类型定义 */
 interface TsconfigCompilerOptions {
   target: string;
   useDefineForClassFields: boolean;
@@ -293,11 +337,20 @@ interface TsconfigCompilerOptions {
   jsx?: string;
 }
 
+/** tsconfig.json 的完整结构类型定义 */
 interface TsconfigJson {
   compilerOptions: TsconfigCompilerOptions;
   include: string[];
 }
 
+/**
+ * 生成 tsconfig.json 文件内容。
+ * 基础配置适配 ES2020 + Bundler 模块解析 + 严格模式。
+ * React 框架额外启用 jsx: 'react-jsx'。
+ *
+ * @param framework - 目标框架名
+ * @returns tsconfig.json 的 JSON 字符串
+ */
 function generateTsconfigJson(framework: string): string {
   const base: TsconfigJson = {
     compilerOptions: {
@@ -327,9 +380,17 @@ function generateTsconfigJson(framework: string): string {
   return JSON.stringify(base, null, 2);
 }
 
+/**
+ * 生成 vite.config.ts 文件内容。
+ * 根据框架和样式方案动态添加对应的 Vite 插件。
+ *
+ * @param framework - 目标框架（react / vue）
+ * @param styleMethod - 样式方案（如 tailwind 时会添加 @tailwindcss/vite 插件）
+ * @returns vite.config.ts 的源代码字符串
+ */
 function generateViteConfig(framework: string, styleMethod: string): string {
-  const plugins: string[] = [];
-  const imports: string[] = [`import { defineConfig } from 'vite';`];
+  const plugins: string[] = [];  // Vite 插件调用表达式列表
+  const imports: string[] = [`import { defineConfig } from 'vite';`];  // import 语句列表
 
   if (framework === 'react') {
     imports.push(`import react from '@vitejs/plugin-react';`);
@@ -352,6 +413,11 @@ export default defineConfig({
 `;
 }
 
+/**
+ * 生成 .gitignore 文件内容。
+ * 包含 node_modules、构建产物、环境变量、编辑器配置、系统文件等常见忽略规则。
+ * @returns .gitignore 文件的文本内容
+ */
 function generateGitignore(): string {
   return `# dependencies
 node_modules/
@@ -385,8 +451,22 @@ npm-debug.log*
 `;
 }
 
-// ── 工具定义 ──────────────────────────────────────
+// ── AI SDK 工具定义 ──────────────────────────────────
 
+/**
+ * planProjectStructure — 根据框架和组件列表规划完整的项目目录结构。
+ *
+ * 基于预定义的框架模板，结合用户指定的组件列表、路由需求、状态管理需求等，
+ * 生成完整的目录列表和文件清单。
+ *
+ * @param framework - 目标框架（react / vue / svelte / html+css+js）
+ * @param components - 组件名列表（PascalCase）
+ * @param hasRouter - 是否需要路由（默认 false）
+ * @param hasStateManagement - 是否需要全局状态管理（默认 false）
+ * @param styleMethod - 样式方案（默认 'tailwind'）
+ * @param features - 额外功能需求列表
+ * @returns 目录列表、入口文件、组件条目和功能特性清单
+ */
 export const planProjectStructure = tool({
   description: '根据框架和组件列表规划完整的项目目录结构，返回目录树和文件清单',
   inputSchema: z.object({
@@ -409,15 +489,17 @@ export const planProjectStructure = tool({
     styleMethod,
     features,
   }) => {
+    // 标准化框架名称
     const fwKey = framework.toLowerCase().includes('html')
       ? 'html+css+js'
       : framework.toLowerCase();
+    // 获取框架对应的目录模板，找不到则回退到 React
     const structure = FRAMEWORK_STRUCTURES[fwKey] ?? FRAMEWORK_STRUCTURES.react;
 
     const directories = [...structure.directories];
     const componentEntries: Array<{ component: string; directory: string; files: string[] }> = [];
 
-    // 组件目录规划
+    // 组件目录规划 —— 不同框架的组件存放位置不同
     const componentBaseDir =
       fwKey === 'html+css+js'
         ? 'components'
@@ -444,8 +526,9 @@ export const planProjectStructure = tool({
       componentEntries.push({ component: name, directory: dir, files });
     }
 
-    // 功能目录
+    // 功能目录 —— 根据选定的功能特性追加额外目录和依赖
     const allFeatures = [...(features ?? [])];
+    // 自动将 hasRouter/hasStateManagement 转换为对应的功能特性名
     if (hasRouter) allFeatures.push(fwKey === 'vue' ? 'vue-router' : 'router');
     if (hasStateManagement) allFeatures.push(fwKey === 'vue' ? 'pinia' : 'state-management');
 
@@ -458,6 +541,7 @@ export const planProjectStructure = tool({
 
     return {
       framework: fwKey,
+      // 使用 Set 去重（可能有重复目录）
       directories: [...new Set(directories)],
       entryFiles: structure.entryFiles,
       componentEntries,
@@ -467,6 +551,25 @@ export const planProjectStructure = tool({
   },
 });
 
+/**
+ * generateConfigFile — 生成项目配置文件内容。
+ *
+ * 根据配置文件类型调用对应的模板生成器，生成文件内容。
+ * 支持的配置文件类型：
+ *   - package.json：合并框架依赖 + 样式依赖 + 用户自定义依赖
+ *   - tsconfig.json：框架相关的 TypeScript 配置
+ *   - vite.config：Vite 构建配置（含框架和样式插件）
+ *   - gitignore：标准 .gitignore 模板
+ *
+ * @param configType - 配置文件类型
+ * @param framework - 目标框架
+ * @param projectName - 项目名（默认 'my-app'）
+ * @param styleMethod - 样式方案（默认 'tailwind'）
+ * @param dependencies - 额外生产依赖（可选）
+ * @param devDependencies - 额外开发依赖（可选）
+ * @param scripts - 自定义 npm scripts（可选）
+ * @returns 文件名和文件内容
+ */
 export const generateConfigFile = tool({
   description: '生成项目配置文件内容（package.json, tsconfig.json, vite.config.ts, .gitignore 等）',
   inputSchema: z.object({
@@ -489,12 +592,15 @@ export const generateConfigFile = tool({
     devDependencies,
     scripts,
   }) => {
+    // 标准化框架名称
     const fwKey = framework.toLowerCase().includes('html')
       ? 'html+css+js'
       : framework.toLowerCase();
 
+    // 根据配置文件类型分发到对应的生成器
     switch (configType) {
       case 'package.json': {
+        // 合并框架依赖 + 样式依赖 + 用户自定义依赖
         const fwDeps = FRAMEWORK_DEPENDENCIES[fwKey] ?? { dependencies: {}, devDependencies: {} };
         const styleDeps = STYLE_DEPENDENCIES[styleMethod] ?? {
           dependencies: {},
@@ -540,6 +646,17 @@ export const generateConfigFile = tool({
   },
 });
 
+/**
+ * inferDependencies — 根据框架、样式方案和功能特性推断完整的 npm 依赖清单。
+ *
+ * 查表合并所有相关依赖，输出统一的 dependencies 和 devDependencies 映射。
+ * 纯计算逻辑，零 LLM 成本。
+ *
+ * @param framework - 目标框架
+ * @param styleMethod - 样式方案（默认 'tailwind'）
+ * @param features - 额外功能特性列表
+ * @returns 生产依赖、开发依赖和总包数统计
+ */
 export const inferDependencies = tool({
   description: '根据框架、样式方案和功能特性推断完整的 npm 依赖清单',
   inputSchema: z.object({
@@ -583,6 +700,18 @@ export const inferDependencies = tool({
   },
 });
 
+/**
+ * generateScaffoldCommands — 生成项目初始化脚手架命令。
+ *
+ * 根据框架和包管理器生成完整的项目创建和初始化命令序列。
+ * 支持 npm / pnpm / yarn / bun 四种包管理器。
+ *
+ * @param framework - 目标框架
+ * @param packageManager - 包管理器（默认 'pnpm'）
+ * @param projectName - 项目名（默认 'my-app'）
+ * @param typescript - 是否使用 TypeScript（默认 true）
+ * @returns 命令列表、安装命令、开发命令和构建命令
+ */
 export const generateScaffoldCommands = tool({
   description: '生成项目初始化脚手架命令（npm create, pnpm create 等）',
   inputSchema: z.object({
@@ -597,7 +726,7 @@ export const generateScaffoldCommands = tool({
       : framework.toLowerCase();
     const commands: Array<{ command: string; description: string; optional: boolean }> = [];
 
-    // 包管理器安装指令前缀
+    // 各包管理器的 install 命令
     const installCmd = {
       npm: 'npm install',
       pnpm: 'pnpm install',
@@ -605,6 +734,7 @@ export const generateScaffoldCommands = tool({
       bun: 'bun install',
     }[packageManager];
 
+    // 各包管理器的 create 命令前缀
     const createPrefix = {
       npm: 'npm create',
       pnpm: 'pnpm create',

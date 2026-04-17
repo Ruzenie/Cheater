@@ -10,9 +10,27 @@
  *   - 组件 → 文件路径映射
  *   - 可选的脚手架命令
  *
+ * 在流水线中的位置：
+ *   Step 3: orchestrator 在设计分析（Step 2）完成后调用本模块
+ *   与 code-producer（Step 4）并行执行（fork-join 模式），互不依赖
+ *   输出传递给 code-assembler（Step 6）用于组装完整项目
+ *
+ * 架构设计：
+ *   - FRAMEWORK_CONFIGS：4 种框架（React/Vue/Svelte/Vanilla）的标准目录和配置模板
+ *   - STYLE_DEPS：各样式方案（tailwind/sass/styled-components 等）的依赖声明
+ *   - AI 补充规划：用 worker 模型判断项目名、布局组件、额外目录/文件/依赖/功能特性
+ *   - 最终合并：框架模板 + AI 补充 + 样式依赖 → 完整 ProjectStructure
+ *
  * 模型策略：
- *   - 结构规划 → worker（需要理解框架约定）
- *   - 配置文件 → 纯模板 / executor（确定性内容）
+ *   - 结构规划 → worker（需要理解框架约定和需求）
+ *   - 配置文件 → 纯模板 / executor（确定性内容，零 LLM 成本）
+ *
+ * 输入类型：
+ *   @param requirement   - 精炼后的需求文本
+ *   @param designOutput  - 设计分析产出（包含组件树）
+ *
+ * 输出类型：
+ *   @returns ProjectPlannerResult - 包含完整项目结构、AI 规划说明、使用的模型层级
  */
 
 import { streamText } from 'ai';
@@ -25,6 +43,10 @@ import type { DesignOutput } from './design-analyzer.js';
 
 // ── 输出类型 ──────────────────────────────────────────
 
+/**
+ * 项目中的单个文件条目。
+ * 描述文件的路径、角色、来源方式，以及可选的模板内容（config/scaffold 文件直接包含内容）。
+ */
 export interface ProjectFileEntry {
   /** 相对项目根的路径，如 "src/components/LoginForm/LoginForm.tsx" */
   filePath: string;
@@ -38,6 +60,10 @@ export interface ProjectFileEntry {
   templateContent?: string;
 }
 
+/**
+ * 组件到文件系统的映射信息。
+ * 告诉 code-assembler 每个组件应该放在哪个目录、如何导入、是否是布局组件。
+ */
 export interface ComponentMapping {
   /** 组件名 */
   componentName: string;
@@ -53,6 +79,11 @@ export interface ComponentMapping {
   isLayout: boolean;
 }
 
+/**
+ * 完整的项目结构定义。
+ * 包含目录列表、文件列表、依赖声明、组件映射和运行命令，
+ * 由 code-assembler 消费并生成实际文件。
+ */
 export interface ProjectStructure {
   /** 项目名 */
   projectName: string;
@@ -86,6 +117,9 @@ export interface ProjectStructure {
   notes: string[];
 }
 
+/**
+ * 项目规划 Agent 的输出结果。
+ */
 export interface ProjectPlannerResult {
   structure: ProjectStructure;
   /** LLM 增强的规划说明（如果 AI 参与了决策） */
@@ -94,8 +128,9 @@ export interface ProjectPlannerResult {
   modelTiersUsed: string[];
 }
 
-// ── Schema ──────────────────────────────────────────────
+// ── Schema（用于宽松解析 AI 规划输出）──────────────────
 
+/** AI 补充规划结果的 Zod 验证模式，所有字段都可选并有默认值 */
 const AiPlanningResultSchema = z.object({
   projectName: z.string().optional(),
   additionalDirectories: z.array(z.string()).optional().default([]),
@@ -116,8 +151,13 @@ const AiPlanningResultSchema = z.object({
   additionalDevDependencies: z.record(z.string()).optional().default({}),
 });
 
-// ── 框架标准配置 ──────────────────────────────────────
+// ── 框架标准配置（4 种框架的目录结构、入口文件、默认依赖和脚本）──
 
+/**
+ * 各框架的标准配置映射表。
+ * 每个框架定义了：标准目录列表、组件根目录、组件文件扩展名、入口文件、
+ * 默认 npm scripts、默认生产依赖和开发依赖。
+ */
 const FRAMEWORK_CONFIGS: Record<
   string,
   {
@@ -234,6 +274,9 @@ const FRAMEWORK_CONFIGS: Record<
   },
 };
 
+// ── 样式方案依赖配置 ──────────────────────────────────
+
+/** 各样式方案需要的额外 npm 依赖 */
 const STYLE_DEPS: Record<
   string,
   { deps: Record<string, string>; devDeps: Record<string, string> }
@@ -248,8 +291,12 @@ const STYLE_DEPS: Record<
   'css-modules': { deps: {}, devDeps: {} },
 };
 
-// ── Telemetry ──
+// ── Telemetry 配置 ──────────────────────────────────
 
+/**
+ * @param functionId - 调用标识符，如 `project-planner:plan`
+ * @returns AI SDK 的 experimental_telemetry 配置
+ */
 function telemetryConfig(functionId: string) {
   return {
     isEnabled: true,
@@ -260,6 +307,14 @@ function telemetryConfig(functionId: string) {
 
 // ── 工具函数 ──────────────────────────────────────
 
+/**
+ * 将用户输入的框架名标准化为内部框架 key。
+ * 支持各种别名：vanilla/native/javascript/html → html+css+js，
+ * 含 html+css 的字符串 → html+css+js，未知值 → 默认 react。
+ *
+ * @param framework - 用户输入的框架名
+ * @returns 标准化后的框架 key（react/vue/svelte/html+css+js）
+ */
 function normalizeFrameworkKey(framework: string): string {
   const value = framework.trim().toLowerCase();
   if (value.includes('html') && value.includes('css')) return 'html+css+js';
@@ -268,6 +323,16 @@ function normalizeFrameworkKey(framework: string): string {
   return 'react';
 }
 
+/**
+ * 为每个组件构建文件系统映射。
+ * 计算组件的目标目录、主文件路径、关联文件、导入路径和是否为布局组件。
+ *
+ * @param componentNames   - 组件名列表
+ * @param fwKey            - 标准化后的框架 key
+ * @param config           - 框架标准配置
+ * @param layoutComponents - AI 判断的布局组件名列表
+ * @returns 组件映射数组
+ */
 function buildComponentMapping(
   componentNames: string[],
   fwKey: string,
@@ -301,6 +366,18 @@ function buildComponentMapping(
   });
 }
 
+/**
+ * 根据框架和依赖信息生成配置文件列表（package.json/tsconfig/vite.config/.gitignore）。
+ * 所有配置文件都是纯模板生成，不需要 LLM 调用。
+ *
+ * @param fwKey           - 标准化后的框架 key
+ * @param projectName     - 项目名
+ * @param dependencies    - 生产依赖
+ * @param devDependencies - 开发依赖
+ * @param scripts         - npm scripts
+ * @param styleMethod     - 样式方案（影响 vite 插件配置）
+ * @returns 配置文件条目数组
+ */
 function buildConfigFiles(
   fwKey: string,
   projectName: string,
@@ -403,6 +480,19 @@ function buildConfigFiles(
 
 // ── Agent 主函数 ──────────────────────────────────
 
+/**
+ * 项目规划 Agent 主函数 — 根据需求和设计产出规划完整项目结构。
+ *
+ * 执行流程：
+ *   Step 1: 用 worker 模型补充智能规划（项目名、额外目录/文件/依赖、布局组件判断）
+ *   Step 2: 合并框架模板 + AI 规划 + 样式依赖 → 生成完整 ProjectStructure
+ *
+ * @param requirement  - 精炼后的需求文本
+ * @param designOutput - 设计分析产出（包含组件树、响应式策略、状态设计）
+ * @param providers    - LLM 提供商配置
+ * @param options      - 框架、样式、包管理器、暗色模式、项目名配置
+ * @returns 项目规划结果
+ */
 export async function runProjectPlanner(
   requirement: string,
   designOutput: DesignOutput,

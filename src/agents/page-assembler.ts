@@ -5,6 +5,24 @@
  * page-assembler 仅输出固定的 3 个文件（index.html/page.css/page.js），
  * 新的 Code Assembler 可以输出完整的项目结构。
  * 保留此文件仅为向后兼容。
+ *
+ * 在流水线中的位置：
+ *   已被 code-assembler（Step 6）取代，不再被 orchestrator 调用。
+ *   仅通过 index.ts barrel 导出供旧版调用方使用。
+ *
+ * 工作方式：
+ *   1. initializePageAssembly：用 reasoner 模型生成页面骨架（3 个文件）
+ *   2. assemblePageIncrementally：逐个组件增量拼装到骨架中
+ *   3. appendComponentToAssembly：单个组件追加（供外部精细控制）
+ *
+ * 模型策略：使用 reasoner 级别（需要理解组件关系和页面结构）
+ *
+ * 输入类型：
+ *   @param requirement - 需求文本
+ *   @param components  - 组件代码产出数组
+ *
+ * 输出类型：
+ *   @returns AssembledPageResult - 包含 3 个文件（index.html/page.css/page.js）
  */
 
 import { streamText } from 'ai';
@@ -14,21 +32,38 @@ import { consumeTextStream } from '../utils/streaming.js';
 import { safeParseJson } from '../utils/json.js';
 import type { CodeOutput } from './code-producer.js';
 
+// ── 输出类型 ──────────────────────────────────────────
+
+/** 组装后的单个资源文件 */
 export interface AssembledAsset {
+  /** 文件名（固定为 index.html / page.css / page.js） */
   fileName: string;
+  /** 文件完整内容 */
   content: string;
 }
 
+/** 页面组装结果 */
 export interface AssembledPageResult {
+  /** 资源文件列表（固定 3 个） */
   assets: AssembledAsset[];
+  /** 内容来源：reasoner（AI 生成）或 fallback（模板兜底） */
   source: 'reasoner' | 'fallback';
 }
 
+/** 组件追加选项 */
 export interface AssemblyAppendOptions {
+  /** 目标框架 */
   framework: string;
+  /** 页面标题 */
   pageTitle?: string;
 }
 
+// ── Telemetry 配置 ──────────────────────────────────
+
+/**
+ * @param functionId - 调用标识符
+ * @returns AI SDK 的 experimental_telemetry 配置
+ */
 function telemetryConfig(functionId: string) {
   return {
     isEnabled: true,
@@ -37,6 +72,14 @@ function telemetryConfig(functionId: string) {
   };
 }
 
+// ── 工具函数 ──────────────────────────────────────────
+
+/**
+ * 构建要求 LLM 按指定文件名输出 JSON 的规则文本。
+ *
+ * @param assetNames - 预期的文件名列表
+ * @returns 规则描述文本
+ */
 function buildAssetJsonRule(assetNames: string[]): string {
   return `你必须输出合法 JSON，格式如下：
 {
@@ -51,6 +94,14 @@ ${assetNames.map((name) => `    {"fileName": "${name}", "content": "完整文件
 - 不要输出 JSON 以外的任何内容`;
 }
 
+/**
+ * 解析 LLM 返回的 JSON 为 AssembledAsset 数组。
+ * 解析失败或文件数不匹配时回退到 fallbackAssets。
+ *
+ * @param text           - LLM 的原始文本输出
+ * @param fallbackAssets - 兜底资源文件
+ * @returns 解析后的资源文件数组
+ */
 function parseAssets(text: string, fallbackAssets: AssembledAsset[]): AssembledAsset[] {
   try {
     const raw = safeParseJson(text) as Record<string, unknown>;
@@ -74,6 +125,15 @@ function parseAssets(text: string, fallbackAssets: AssembledAsset[]): AssembledA
   }
 }
 
+/**
+ * 构建兜底资源文件（当 LLM 调用失败时使用）。
+ * 将已有组件的 HTML/CSS/JS 直接拼接为 3 个文件。
+ *
+ * @param requirement - 需求文本
+ * @param components  - 已处理的组件列表
+ * @param pageTitle   - 页面标题
+ * @returns 3 个兜底资源文件
+ */
 function buildFallbackAssets(
   requirement: string,
   components: CodeOutput[],
@@ -141,6 +201,19 @@ ${bodySections || '      <p>暂无可组装内容。</p>'}
   ];
 }
 
+// ── Agent 主函数 ──────────────────────────────────────
+
+/**
+ * @deprecated 请使用 runCodeAssembler 替代。
+ *
+ * 初始化页面组装 — 生成页面骨架。
+ * 使用 reasoner 模型生成包含组件插槽的基础页面框架。
+ *
+ * @param requirement - 需求文本
+ * @param providers   - LLM 提供商配置
+ * @param options     - 框架和页面标题
+ * @returns 页面骨架（3 个文件）
+ */
 export async function initializePageAssembly(
   requirement: string,
   providers: AllProviders,
@@ -220,6 +293,18 @@ ${requirement}
   };
 }
 
+/**
+ * @deprecated 请使用 runCodeAssembler 替代。
+ *
+ * 增量组装所有组件到页面中。
+ * 先初始化骨架，然后逐个组件追加拼装。
+ *
+ * @param requirement - 需求文本
+ * @param components  - 所有组件的代码产出
+ * @param providers   - LLM 提供商配置
+ * @param options     - 框架和页面标题
+ * @returns 完整页面（3 个文件）
+ */
 export async function assemblePageIncrementally(
   requirement: string,
   components: CodeOutput[],
@@ -288,6 +373,20 @@ ${componentText}
   return assembly;
 }
 
+/**
+ * @deprecated 请使用 runCodeAssembler 替代。
+ *
+ * 将单个组件追加到已有的页面骨架中。
+ * 供外部调用方精细控制组装过程（而非批量组装）。
+ *
+ * @param requirement          - 需求文本
+ * @param currentAssembly      - 当前页面状态
+ * @param component            - 要追加的组件
+ * @param processedComponents  - 已处理的所有组件（用于构建 fallback）
+ * @param providers            - LLM 提供商配置
+ * @param options              - 框架和页面标题
+ * @returns 更新后的页面（3 个文件）
+ */
 export async function appendComponentToAssembly(
   requirement: string,
   currentAssembly: AssembledPageResult,

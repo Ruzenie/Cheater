@@ -7,7 +7,24 @@
  *   3. 检测隐含约束（无障碍、响应式、性能）
  *   4. 建议技术栈
  *
- * 模型策略：使用 executor 级别（文本理解和重组，不需要强推理）
+ * 在流水线中的位置：
+ *   Step 0: 作为流水线的第一步，由 orchestrator 调用
+ *   将用户的模糊口语化需求转化为精确的技术描述，供后续所有 Agent 使用
+ *   可通过 skipRefine 选项跳过（当输入已是结构化需求时）
+ *
+ * 模型策略：
+ *   使用 executor 级别（文本理解和重组，不需要强推理，成本低）
+ *
+ * 容错策略：
+ *   - Zod safeParse 宽松验证：部分字段可用就用
+ *   - JSON 解析失败时，将 LLM 纯文本输出作为 refined
+ *   - 最坏情况下直接返回原始需求
+ *
+ * 输入类型：
+ *   @param requirement - 用户原始的自然语言需求描述
+ *
+ * 输出类型：
+ *   @returns RefinedRequirement - 包含精炼需求、实体列表、约束列表、建议技术栈
  */
 
 import { streamText } from 'ai';
@@ -19,11 +36,13 @@ import { safeParseJson } from '../utils/json.js';
 
 // ── 输出类型 ──────────────────────────────────────────
 
+/** 实体的 Zod 验证模式（type + value 结构） */
 const EntitySchema = z.object({
   type: z.string().describe('实体类型，如 component, interaction, style, data, layout'),
   value: z.string().describe('实体值'),
 });
 
+/** 精炼结果的 Zod 验证模式 */
 const RefinedRequirementSchema = z.object({
   refined: z.string().describe('精炼后的核心需求描述'),
   entities: z.array(EntitySchema).describe('提取出的关键实体').optional().default([]),
@@ -36,6 +55,10 @@ const RefinedRequirementSchema = z.object({
     .optional(),
 });
 
+/**
+ * 需求精炼的输出接口。
+ * 比 Zod Schema 多一个 original 字段（保留原始需求备查）。
+ */
 export interface RefinedRequirement {
   /** 精炼后的核心需求描述（去除口语化、补全技术细节） */
   refined: string;
@@ -51,6 +74,18 @@ export interface RefinedRequirement {
 
 // ── Agent 主函数 ──────────────────────────────────────
 
+/**
+ * 需求精炼 Agent 主函数 — 将模糊的自然语言需求转化为结构化技术描述。
+ *
+ * 执行流程：
+ *   1. 用 executor 模型流式生成精炼结果（JSON 格式）
+ *   2. 消费流式输出，获取完整文本
+ *   3. 宽松解析 JSON：Zod safeParse → 部分可用 → 纯文本兜底 → 原始需求兜底
+ *
+ * @param requirement - 用户原始的自然语言需求
+ * @param providers   - LLM 提供商配置
+ * @returns 精炼后的需求结构
+ */
 export async function runPromptRefiner(
   requirement: string,
   providers: AllProviders,
@@ -87,7 +122,7 @@ export async function runPromptRefiner(
 不要输出任何 JSON 以外的内容。`,
     prompt: requirement,
     temperature: 0.2,
-    maxOutputTokens: 2000,
+    maxOutputTokens: 3000,
     experimental_telemetry: {
       isEnabled: true,
       functionId: 'prompt-refiner',
@@ -98,7 +133,10 @@ export async function runPromptRefiner(
   // 消费流式输出并保留完整文本
   const resultText = await consumeTextStream(stream.textStream, { prefix: '   ↳ ', echo: false });
 
-  // 宽松解析
+  // ── 三级宽松解析策略 ──
+  // 1. Zod safeParse 完全成功 → 直接使用
+  // 2. safeParse 失败但部分字段可用 → 逐字段提取
+  // 3. JSON 解析完全失败 → 用纯文本作为 refined，或回退到原始需求
   let parsed: RefinedRequirement;
   try {
     const rawJson = safeParseJson(resultText) as Record<string, unknown>;
