@@ -225,7 +225,10 @@ export class ContextTracker {
     };
   }
 
-  /** 检查是否需要迁移 */
+  /**
+   * 检查当前上下文状态是否需要迁移
+   * @returns 'ok'=正常, 'warning'=接近上限, 'critical'=达到临界值, 'overflow'=已溢出
+   */
   checkStatus(): 'ok' | 'warning' | 'critical' | 'overflow' {
     if (this.currentTokens >= this.maxTokens) return 'overflow';
     if (this.currentTokens >= this.criticalThreshold) return 'critical';
