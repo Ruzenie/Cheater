@@ -236,7 +236,16 @@ export class ContextTracker {
     return 'ok';
   }
 
-  /** 预估添加 N 个 token 后的状态 */
+  /**
+   * 预估添加指定 token 后的状态
+   *
+   * @description
+   * 用于在执行任务前评估：如果执行这个任务，上下文会不会溢出？
+   * 如果预测结果为 overflow，应该先迁移再执行。
+   *
+   * @param additionalTokens - 预估将要添加的 token 数量
+   * @returns 添加后的预测状态
+   */
   predict(additionalTokens: number): 'ok' | 'warning' | 'critical' | 'overflow' {
     const predicted = this.currentTokens + additionalTokens;
     if (predicted >= this.maxTokens) return 'overflow';
@@ -245,29 +254,54 @@ export class ContextTracker {
     return 'ok';
   }
 
-  /** 剩余可用 token */
+  /**
+   * 获取剩余可用 token 数量
+   * @returns 剩余 token 数（最小为 0）
+   */
   remaining(): number {
     return Math.max(0, this.maxTokens - this.currentTokens);
   }
 
+  /** 重置 token 计数（会话重新开始时） */
   reset(): void {
     this.currentTokens = 0;
   }
 }
 
 // ══════════════════════════════════════════════════════
-//  会话管理器
+//  会话管理器 — 管理会话完整生命周期
 // ══════════════════════════════════════════════════════
 
 /**
- * 管理会话生命周期：创建 → 追踪 → 快照 → 交接 → 迁移
+ * 会话管理器
+ *
+ * @description
+ * 管理会话的完整生命周期：创建 → 追踪 → 快照 → 交接 → 迁移。
+ *
+ * 核心职责：
+ *   - 维护会话状态快照（completedItems、decisions、codeArtifacts 等）
+ *   - 追踪 token 使用量，判断是否需要迁移
+ *   - 在需要迁移时生成交接包（HandoffPackage），包含开场模板和校验问题
+ *   - 将状态和交接包持久化到文件系统
+ *   - 记录迁移历史，形成可追溯的迁移链
  */
 export class SessionManager {
+  /** 会话数据的文件系统存储目录 */
   private readonly storageDir: string;
+  /** 当前会话的状态快照 */
   private snapshot: SessionSnapshot;
+  /** 上下文 token 追踪器 */
   private contextTracker: ContextTracker;
+  /** 迁移历史记录 */
   private migrationHistory: MigrationRecord[] = [];
 
+  /**
+   * @param sessionId - 会话唯一标识符
+   * @param options - 配置选项
+   * @param options.storageDir - 文件存储目录（默认 './.session-data'）
+   * @param options.maxTokens - 最大上下文 token 数（默认 32000）
+   * @param options.objective - 会话目标描述
+   */
   constructor(
     sessionId: string,
     options: {
