@@ -2,7 +2,7 @@
 
 > 多模型前端 Agent — 需求精炼 / 设计分析 / 项目规划 / 代码制作 / 代码审计 / 代码组装
 
-Cheater 是一个基于 [Vercel AI SDK](https://sdk.vercel.ai/) 的 **多模型前端代码生成系统**。输入一句自然语言需求，自动输出完整可运行的前端项目。
+Cheater 是一个基于 [Vercel AI SDK](https://sdk.vercel.ai/) 的 **多模型前端代码生成系统**。
 
 核心理念：**让每个模型只做它最擅长的。**
 
